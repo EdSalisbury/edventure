@@ -2,20 +2,11 @@
         icl "hardware.s"
 
 chr = $2400
-rom_chr = $e000
-
-last_line = $cb
-cur_char = $cc
-last_char = $cd
-
-chr_lo = $ce
-chr_hi = $cf
+num_chars = 7
+screen = $4000
 
 init
-        lda #<dlist
-        sta sdlstl
-        lda #>dlist
-        sta sdlstl + 1
+        mwa #dlist SDLSTL
 
 ; Use custom character set
         mva #>chr CHBAS
@@ -27,41 +18,27 @@ next_line
         sta chr, x
         inx
         iny
-        cpy #24
+        cpy #(8 * num_chars)
         bne next_line
 
-; ; Temporary main
-; 	ldy #0
-; main_loop
-; 	tya
-; 	sta (SAVMSC),y
-; 	iny
-; 	bne main_loop
-
-; 	jmp *
-
-
-        ldx #0
-loop
-        lda #1
-        sta $4000, X
-        inx
-        lda #2
-        sta $4000, X
-        inx
+; Main Loop
         jsr vblank
 
-        jmp loop
+        ldx #0
+map_copy
+        mva map,x screen,x
+        mva map+$100,x screen+$100,x
+        mva map+$200,x screen+$200,x
+        inx
+        bne map_copy
+
+        jmp *
 
 vblank
         pha
-        ; Set colors
-        lda #$70
-        sta $2c4
-        lda #$76
-        sta $2c5
-        lda #$7E
-        sta $2c6
+        mva #$80 $2c4
+        mva #$86 $2c5
+        mva #$8a $2c6
 
         lda #1
         sta 540
@@ -74,7 +51,7 @@ vblank_loop
 dlist
         dta $70,$70,$70  ; 24 blank lines
         dta $45,$00,$40  ; Mode 5 + LMS, setting screen memory to $4000
-        dta 5, 5, 5, 5, 5, 5
+        dta 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5
         dta $41,<dlist,>dlist ; JVB, restart same display list on next frame
 
         .local charset
@@ -98,6 +75,61 @@ wall2
         .byte %10100101
         .byte %01010101
         .byte %00000000
+
+floor1
+        .byte %10101110
+        .byte %10101010
+        .byte %11111111
+        .byte %10101010
+        .byte %10101010
+        .byte %11101010
+        .byte %10101010
+        .byte %10101010
+
+floor2
+        .byte %10101010
+        .byte %10101110
+        .byte %10101010
+        .byte %10101010
+        .byte %10101110
+        .byte %10101010
+        .byte %11111111
+        .byte %10101110
+
+door1
+        .byte %11100101
+        .byte %10011111
+        .byte %01111100
+        .byte %01110000
+        .byte %01110000
+        .byte %01111111
+        .byte %01111111
+        .byte %01111111
+
+door2
+        .byte %01011111
+        .byte %11110110
+        .byte %00111110
+        .byte %00001101
+        .byte %00001101
+        .byte %11111101
+        .byte %11001101
+        .byte %11111101
         .endl
 
+
+        .local map
+        .byte 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2
+        .byte 1, 2, 3, 4, 3, 4, 3, 4, 1, 2, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 1, 2
+        .byte 1, 2, 3, 4, 3, 4, 3, 4, 1, 2, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 1, 2
+        .byte 1, 2, 3, 4, 3, 4, 3, 4, 1, 2, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 1, 2
+        .byte 1, 2, 1, 2, 5, 6, 1, 2, 1, 2, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 1, 2
+        .byte 1, 2, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 1, 2
+        .byte 1, 2, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 1, 2
+        .byte 1, 2, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 1, 2
+        .byte 1, 2, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 1, 2
+        .byte 1, 2, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 1, 2
+        .byte 1, 2, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 3, 4, 1, 2
+        .byte 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2
+        .endl
         run init
