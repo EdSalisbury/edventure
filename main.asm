@@ -3,7 +3,7 @@
 ; Mission: EdPossible
 ; youtube.com/MissionEdPossible
 ; Assemble in MADS: mads -l -t main.asm
-; Video 1: Initial Setup
+; Video 2: Fun with Display Lists!
 
 	org $2000
 
