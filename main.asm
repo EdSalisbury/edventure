@@ -3,39 +3,41 @@
 ; Mission: EdPossible
 ; youtube.com/MissionEdPossible
 ; Assemble in MADS: mads -l -t main.asm
-; Video 2: Fun with Display Lists!
+; Video 3: Fun with character sets!
 
 	org $2000
 
-SAVMSC = $0058 ; Screen memory address
-SDLSTL = $0230 ; Display list starting address
+SDLSTL = $0230  ; Display list starting address
+CHBAS = $02f4   ; CHaracter BAse Register
 
-screen = $4000 ; Screen buffer
-blank8 = $70   ; 8 blank lines
-lms = $40	   ; Load Memory Scan
-jvb = $41	   ; Jump while vertical blank
+charset = $3c00 ; Character Set
+screen = $4000  ; Screen buffer
+blank8 = $70    ; 8 blank lines
+lms = $40	    ; Load Memory Scan
+jvb = $41	    ; Jump while vertical blank
 
-antic2 = 2     ; Antic mode 2
-antic3 = 3	   ; Antic mode 3
-antic4 = 4	   ; Antic mode 4
-antic5 = 5	   ; Antic mode 5
-antic6 = 6	   ; Antic mode 6
-antic7 = 7	   ; Antic mode 7
+antic2 = 2      ; Antic mode 2
+antic5 = 5	    ; Antic mode 5
 
 ; Load display list
-	lda #<dlist
-	sta SDLSTL
-	lda #>dlist
-	sta SDLSTL+1
+	mwa #dlist SDLSTL
 
-; Main loop
-	ldy #0
+; Set up character set
+	mva #>charset CHBAS
+
+	ldx #0
 loop
-	lda hello,y
-	sta screen,y
-	iny
-	cpy #12
+	mva chars,x charset,x
+	inx
+	cpx #16
 	bne loop
+
+	ldy #0
+loop2
+	mva scene,y screen,y
+	iny
+	cpy #2
+	bne loop2
 
 	jmp *
 
@@ -47,6 +49,30 @@ dlist
 	.byte antic5, antic5, antic5, antic5, antic5
 	.byte jvb, <dlist, >dlist
 
-; Data
-hello
-	.byte "HELLO ATARI!"
+; %00 = 0
+; %01 = 1
+; %10 = 2
+; %11 = 3
+
+scene
+	.byte " !"
+
+chars
+	.byte %00000000
+	.byte %00000001
+	.byte %00000110
+	.byte %00011011
+	.byte %00011011
+	.byte %00000110
+	.byte %00000001
+	.byte %00000000
+
+	.byte %00000000
+	.byte %01000000
+	.byte %10010000
+	.byte %11100100
+	.byte %11100100
+	.byte %10010000
+	.byte %01000000
+	.byte %00000000
+	
