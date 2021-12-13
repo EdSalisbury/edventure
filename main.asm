@@ -3,7 +3,7 @@
 ; Mission: EdPossible
 ; youtube.com/MissionEdPossible
 ; Assemble in MADS: mads -l -t main.asm
-; Video 4: Moar color!
+; Video 5: More work with character sets
 
 ; ATASCII Table: https://www.atariwiki.org/wiki/attach/Atari%20ATASCII%20Table/ascii_atascii_table.pdf
 ; ATASCII 0-31 Screen code 64-95
@@ -52,11 +52,11 @@ loop
 	bne loop
 
 ; Change colors
-	mva #med_gray COLOR0
-	mva #lt_gray COLOR1
-	mva #green COLOR2
-	mva #brown COLOR3
-	mva #black COLOR4
+	mva #med_gray COLOR0 ; %01
+	mva #lt_gray COLOR1  ; %10
+	mva #green COLOR2	 ; %11
+	mva #brown COLOR3    ; %11 (inverse)
+	mva #black COLOR4    ; %00
 
 	ldy #0
 loop2
@@ -75,30 +75,26 @@ dlist
 	.byte antic5, antic5, antic5, antic5, antic5
 	.byte jvb, <dlist, >dlist
 
-; %00 = 0
-; %01 = 1
-; %10 = 2
-; %11 = 3
+
 
 scene
-	.byte 1,2,129,130,1,2,129,130,1,2,129,130
+	.byte 1,2,1,2
 
 chars
+	.byte %10101010
+	.byte %10100101
+	.byte %01010101
 	.byte %00000000
-	.byte %00000001
-	.byte %00000110
-	.byte %00011011
-	.byte %00011011
-	.byte %00000110
-	.byte %00000001
-	.byte %00000000
-
-	.byte %00000000
-	.byte %01000000
-	.byte %10010000
-	.byte %11100100
-	.byte %11100100
-	.byte %10010000
-	.byte %01000000
+	.byte %01010010
+	.byte %01010010
+	.byte %01010010
 	.byte %00000000
 	
+	.byte %01001010
+	.byte %01001010
+	.byte %00001001
+	.byte %00000000
+	.byte %10101001
+	.byte %10010101
+	.byte %01010101
+	.byte %00000000
