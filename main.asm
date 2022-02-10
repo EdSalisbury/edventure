@@ -15,12 +15,13 @@
 
 	org $2000
 
-charset = $3c00 ; Character Set
+charset = $5000 ; Character Set
 screen = $4000  ; Screen buffer
 
 	setup_screen()
 	setup_colors()
-	load_gfx()
+	;load_gfx()
+	mva #>charset CHBAS
 	display_map()
 
 	jmp *
@@ -52,21 +53,21 @@ black = $00
 * Proc: load_gfx                          *
 * Loads graphics into character set       *
 * --------------------------------------- *
-.proc load_gfx
-	mva #>charset CHBAS
+; .proc load_gfx
+; 	mva #>charset CHBAS
 
-	ldx #0
-loop
-	mva gfx,x charset,x
-	mva gfx+8,x charset+8,x
-	mva gfx+16,x charset+16,x
-	mva gfx+32,x charset+32,x
+; 	ldx #0
+; loop
+; 	mva gfx,x charset,x
+; 	mva gfx+8,x charset+8,x
+; 	mva gfx+16,x charset+16,x
+; 	mva gfx+32,x charset+32,x
 	
-	inx
-	cpx #128
-	bne loop
-	rts
-	.endp
+; 	inx
+; 	cpx #128
+; 	bne loop
+; 	rts
+; 	.endp
 
 * --------------------------------------- *
 * Proc: display_map                       *

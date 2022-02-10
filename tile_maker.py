@@ -15,7 +15,8 @@ colors = ["11", "01", "10", "00", "11"]
 
 f = open("gfx.asm", "w")
 char = 0
-f.write("\t.local gfx\n")
+#f.write("\t.local gfx\n")
+f.write("\torg $5000\n")
 for row in range(int(height / tile_height)):
     for col in range(int(width / tile_width)):
         f.write(f"\t; char {char}\n")
@@ -26,5 +27,5 @@ for row in range(int(height / tile_height)):
                 f.write(code)
             f.write("\n")
         char += 1
-f.write("\t.endl\n")
+#f.write("\t.endl\n")
 f.close()
