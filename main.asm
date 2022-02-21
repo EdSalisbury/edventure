@@ -3,7 +3,7 @@
 ; Mission: EdPossible
 ; youtube.com/MissionEdPossible
 ; Assemble in MADS: mads -l -t main.asm
-; Video 6: Reorganization and more graphics
+; Video 7: Player-Missile Graphics
 
 ; ATASCII Table: https://www.atariwiki.org/wiki/attach/Atari%20ATASCII%20Table/ascii_atascii_table.pdf
 ; ATASCII 0-31 Screen code 64-95
@@ -12,16 +12,20 @@
 
 ; NTSC Color Palette: https://atariage.com/forums/uploads/monthly_10_2015/post-6369-0-47505700-1443889945.png
 ; PAL Color Palette: https://atariage.com/forums/uploads/monthly_10_2015/post-6369-0-90255700-1443889950.png
+; PMG Memory Map: https://www.atarimagazines.com/compute/issue64/atari_animation.gif
 
 	org $2000
 
+screen  = $4000 ; Screen buffer
 charset = $5000 ; Character Set
-screen = $4000  ; Screen buffer
+pmg     = $6000 ; Player Missle Data
 
 	setup_screen()
 	setup_colors()
-	;load_gfx()
 	mva #>charset CHBAS
+	clear_pmg()
+	load_pmg()
+	setup_pmg()
 	display_map()
 
 	jmp *
@@ -29,6 +33,7 @@ screen = $4000  ; Screen buffer
 	icl 'hardware.asm'
 	icl 'dlist.asm'
 	icl 'gfx.asm'
+	icl 'pmgdata.asm'
 
 * --------------------------------------- *
 * Proc: setup_colors                      *
@@ -40,34 +45,85 @@ lt_gray = $0a
 green = $c2
 brown = $22
 black = $00
+peach = $2c
+blue = $80
 
+	; Character Set Colors
 	mva #med_gray COLOR0 ; %01
 	mva #lt_gray COLOR1  ; %10
 	mva #green COLOR2	 ; %11
 	mva #brown COLOR3    ; %11 (inverse)
 	mva #black COLOR4    ; %00
+
+	; Player-Missile Colors
+	mva #brown PCOLR0
+	mva #peach PCOLR1
+	mva #blue PCOLR2
+	mva #black PCOLR3
+
 	rts
 	.endp
 
 * --------------------------------------- *
-* Proc: load_gfx                          *
-* Loads graphics into character set       *
+* Proc: clear_pmg                         *
+* Clears memory for Player-Missile Gfx    *
 * --------------------------------------- *
-; .proc load_gfx
-; 	mva #>charset CHBAS
+.proc clear_pmg
+pmg_p0 = pmg + $200
+pmg_p1 = pmg + $280
+pmg_p2 = pmg + $300
+pmg_p3 = pmg + $380
 
-; 	ldx #0
-; loop
-; 	mva gfx,x charset,x
-; 	mva gfx+8,x charset+8,x
-; 	mva gfx+16,x charset+16,x
-; 	mva gfx+32,x charset+32,x
-	
-; 	inx
-; 	cpx #128
-; 	bne loop
-; 	rts
-; 	.endp
+	ldx #$80
+	lda #0
+loop
+	sta pmg_p0,x
+	sta pmg_p1,x
+	sta pmg_p2,x
+	sta pmg_p3,x
+	dex
+	bne loop
+	rts
+	.endp
+
+* --------------------------------------- *
+* Proc: load_pmg                          *
+* Load PMG Graphics                       *
+* --------------------------------------- *
+.proc load_pmg
+pmg_p0 = pmg + $200
+pmg_p1 = pmg + $280
+pmg_p2 = pmg + $300
+pmg_p3 = pmg + $380
+
+	ldx #0
+loop
+	mva pmgdata,x pmg_p0+64,x
+	mva pmgdata+8,x pmg_p1+64,x
+	mva pmgdata+16,x pmg_p2+64,x
+	mva pmgdata+24,x pmg_p3+64,x
+	inx
+	cpx #8
+	bne loop
+	rts
+	.endp
+
+* --------------------------------------- *
+* Proc: setup_pmg                         *
+* Sets up Player-Missile Graphics System  *
+* --------------------------------------- *
+.proc setup_pmg
+	mva #>pmg PMBASE
+	mva #46 SDMCTL ; Single Line resolution
+	mva #3 GRACTL  ; Enable PMG
+	mva #1 GRPRIOR ; Give players priority
+	lda #120
+	sta HPOSP0
+	sta HPOSP1
+	sta HPOSP2
+	sta HPOSP3
+	rts
+	.endp
 
 * --------------------------------------- *
 * Proc: display_map                       *
