@@ -3,7 +3,7 @@
 ; Mission: EdPossible
 ; youtube.com/MissionEdPossible
 ; Assemble in MADS: mads -l -t main.asm
-; Video 7: Player-Missile Graphics
+; Episode 8: Tile-based maps
 
 ; ATASCII Table: https://www.atariwiki.org/wiki/attach/Atari%20ATASCII%20Table/ascii_atascii_table.pdf
 ; ATASCII 0-31 Screen code 64-95
@@ -77,11 +77,11 @@ pmg_p3 = pmg + $380
 	ldx #$80
 	lda #0
 loop
+	dex
 	sta pmg_p0,x
 	sta pmg_p1,x
 	sta pmg_p2,x
 	sta pmg_p3,x
-	dex
 	bne loop
 	rts
 	.endp
