@@ -153,8 +153,6 @@ loop
 .proc display_map
 	ldx #0
 loop
-	blit_row map,x*20, screen,x*40
-
 	blit_row map, screen
 	blit_row map+20, screen+40
 	blit_row map+40, screen+80
