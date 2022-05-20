@@ -28,6 +28,7 @@ pmg     = $6000 ; Player Missle Data
 	setup_pmg()
 	display_map()
 
+
 game
 	lda STICK0
 	and #%0100
@@ -46,7 +47,7 @@ game
 
 scroll_down
 	delay()
-	ldy #15
+	ldy #16
 	ldx #4
 dn_loop
 	clc
@@ -66,7 +67,7 @@ dn_loop
 
 scroll_up
 	delay()
-	ldy #15
+	ldy #16
 	ldx #4
 up_loop
 	sec
@@ -86,12 +87,17 @@ up_loop
 
 scroll_left
 	delay()
-	ldy #15
+	ldy #16
 	ldx #4
 loop
-	dec setup_screen.dlist,x
-	dec setup_screen.dlist,x
+	sec
+	lda setup_screen.dlist,x
+	sbc #$02
+	sta setup_screen.dlist,x
 	inx
+	lda setup_screen.dlist,x
+	sbc #$00
+	sta setup_screen.dlist,x
 	inx
 	inx
 	dey
@@ -100,12 +106,17 @@ loop
 
 scroll_right
 	delay()
-	ldy #15
+	ldy #16
 	ldx #4
 loop2
-	inc setup_screen.dlist,x
-	inc setup_screen.dlist,x
+	clc
+	lda setup_screen.dlist,x
+	adc #$02
+	sta setup_screen.dlist,x
 	inx
+	lda setup_screen.dlist,x
+	adc #$00
+	sta setup_screen.dlist,x
 	inx
 	inx
 	dey
@@ -264,7 +275,7 @@ loop
 ; blit the map into the middle of the canvas
 ; calculate the viewport position
 
-canvas = screen
+canvas = $8700
 
 canvas_width = 64
 canvas_height = 64
