@@ -20,6 +20,8 @@ screen  = $8000 ; Screen buffer
 charset = $5000 ; Character Set
 pmg     = $6000 ; Player Missle Data
 
+tmp = $92
+
 	setup_screen()
 	setup_colors()
 	mva #>charset CHBAS
@@ -28,111 +30,34 @@ pmg     = $6000 ; Player Missle Data
 	setup_pmg()
 	display_map()
 
-
 game
 	lda STICK0
 	and #%0100
-	beq scroll_left
+	beq left
 	lda STICK0
 	and #%1000
-	beq scroll_right
-	; lda STICK0
-	; and #%0010
-	; beq scroll_down
-	; lda STICK0
-	; and #%0001
-	; beq scroll_up
+	beq right
+	lda STICK0
+	and #%0010
+	beq down
+	lda STICK0
+	and #%0001
+	beq up
 
 	jmp game
 
-;.proc scroll (.byte offset)
-
-; .proc myproc (.byte myvar+1) .var
-; .var _myvar .byte
-; myvar mva #0 _myvar
-
-;     rts
-; 	.endp
-
-
-scroll_down
-	delay #10
-	ldy #16
-	ldx #4
-dn_loop
-	clc
-	lda setup_screen.dlist,x
-	adc #$40
-	sta setup_screen.dlist,x
-	inx
-	lda setup_screen.dlist,x
-	adc #0
-	sta setup_screen.dlist,x
-	inx
-	inx
-	dey
-	bne dn_loop
-
+left
+	scroll_lu #2
 	jmp game
-
-scroll_up
-	delay #10
-	ldy #16
-	ldx #4
-up_loop
-	sec
-	lda setup_screen.dlist,x
-	sbc #$40
-	sta setup_screen.dlist,x
-	inx
-	lda setup_screen.dlist,x
-	sbc #0
-	sta setup_screen.dlist,x
-	inx
-	inx
-	dey
-	bne up_loop
-
+up
+	scroll_lu #$40
 	jmp game
-
-scroll_left
-	delay #10
-	ldy #16
-	ldx #4
-loop
-	sec
-	lda setup_screen.dlist,x
-	sbc #$02
-	sta setup_screen.dlist,x
-	inx
-	lda setup_screen.dlist,x
-	sbc #$00
-	sta setup_screen.dlist,x
-	inx
-	inx
-	dey
-	bne loop
+right
+	scroll_rd #2
 	jmp game
-
-scroll_right
-	delay #10
-	ldy #16
-	ldx #4
-loop2
-	clc
-	lda setup_screen.dlist,x
-	adc #$02
-	sta setup_screen.dlist,x
-	inx
-	lda setup_screen.dlist,x
-	adc #$00
-	sta setup_screen.dlist,x
-	inx
-	inx
-	dey
-	bne loop2
+down
+	scroll_rd #$40
 	jmp game
-
 
 	icl 'hardware.asm'
 	icl 'dlist.asm'
@@ -155,6 +80,51 @@ wait
     bpl start
 	rts
 	.endp
+
+.proc scroll_lu (.byte a) .reg
+	sta tmp
+	delay #10
+	ldy #16
+	ldx #4
+loop
+	sec
+	lda setup_screen.dlist,x
+	sbc tmp
+	sta setup_screen.dlist,x
+	inx
+	lda setup_screen.dlist,x
+	sbc #0
+	sta setup_screen.dlist,x
+	inx
+	inx
+	dey
+	bne loop
+
+	rts
+	.endp
+
+.proc scroll_rd (.byte a) .reg
+	sta tmp
+	delay #10
+	ldy #16
+	ldx #4
+loop
+	clc
+	lda setup_screen.dlist,x
+	adc tmp
+	sta setup_screen.dlist,x
+	inx
+	lda setup_screen.dlist,x
+	adc #0
+	sta setup_screen.dlist,x
+	inx
+	inx
+	dey
+	bne loop
+
+	rts
+	.endp
+
 
 * --------------------------------------- *
 * Proc: setup_colors                      *
