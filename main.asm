@@ -16,7 +16,7 @@
 
 	org $2000
 
-screen  = $4000 ; Screen buffer
+screen  = $8000 ; Screen buffer
 charset = $5000 ; Character Set
 pmg     = $6000 ; Player Missle Data
 
@@ -28,12 +28,112 @@ pmg     = $6000 ; Player Missle Data
 	setup_pmg()
 	display_map()
 
-	jmp *
+game
+	lda STICK0
+	and #%0100
+	beq scroll_left
+	lda STICK0
+	and #%1000
+	beq scroll_right
+	lda STICK0
+	and #%0010
+	beq scroll_down
+	lda STICK0
+	and #%0001
+	beq scroll_up
+
+	jmp game
+
+scroll_down
+	delay()
+	ldy #15
+	ldx #4
+dn_loop
+	clc
+	lda setup_screen.dlist,x
+	adc #$40
+	sta setup_screen.dlist,x
+	inx
+	lda setup_screen.dlist,x
+	adc #0
+	sta setup_screen.dlist,x
+	inx
+	inx
+	dey
+	bne dn_loop
+
+	jmp game
+
+scroll_up
+	delay()
+	ldy #15
+	ldx #4
+up_loop
+	sec
+	lda setup_screen.dlist,x
+	sbc #$40
+	sta setup_screen.dlist,x
+	inx
+	lda setup_screen.dlist,x
+	sbc #0
+	sta setup_screen.dlist,x
+	inx
+	inx
+	dey
+	bne up_loop
+
+	jmp game
+
+scroll_left
+	delay()
+	ldy #15
+	ldx #4
+loop
+	dec setup_screen.dlist,x
+	dec setup_screen.dlist,x
+	inx
+	inx
+	inx
+	dey
+	bne loop
+	jmp game
+
+scroll_right
+	delay()
+	ldy #15
+	ldx #4
+loop2
+	inc setup_screen.dlist,x
+	inc setup_screen.dlist,x
+	inx
+	inx
+	inx
+	dey
+	bne loop2
+	jmp game
+
 
 	icl 'hardware.asm'
 	icl 'dlist.asm'
 	icl 'gfx.asm'
 	icl 'pmgdata.asm'
+
+* --------------------------------------------- *
+* Proc: delay                                   *
+* Uses VBLANKs to wait a certain amount of time *
+* --------------------------------------------- *
+.proc delay
+loop
+	ldx #8         ; number of VBLANKs to wait
+start
+	lda RTCLOK+2     ; check fastest moving RTCLOCK byte
+wait
+	cmp RTCLOK+2     ; VBLANK will update this
+    beq wait         ; delay until VBLANK changes it
+    dex              ; delay for a number of VBLANKs
+    bpl start
+	rts
+	.endp
 
 * --------------------------------------- *
 * Proc: setup_colors                      *
@@ -146,39 +246,73 @@ loop
 	bne loop
 	.endm
 
+.macro blit src, dest
+	lda :src
+	asl
+	sta :dest
+	clc
+	adc #1
+	sta :dest+1
+	.endm
 * --------------------------------------- *
 * Proc: display_map                       *
 * Displays the current map                *
 * --------------------------------------- *
 .proc display_map
-	ldx #0
-loop
-	blit_row map, screen
-	blit_row map+20, screen+40
-	blit_row map+40, screen+80
-	blit_row map+60, screen+120
-	blit_row map+80, screen+160
-	blit_row map+100, screen+200
-	blit_row map+120, screen+240
-	blit_row map+140, screen+280
-	blit_row map+160, screen+320
-	blit_row map+180, screen+360
-	blit_row map+200, screen+400
-	blit_row map+220, screen+440
+; Canvas size is 256x256
+; Clear the canvas
+; blit the map into the middle of the canvas
+; calculate the viewport position
+
+canvas = screen
+
+canvas_width = 64
+canvas_height = 64
+vert_offset = 12
+hor_offset = 12
+
+	; Line 1
+	blit map canvas
+	blit map+1 canvas+2
+	blit map+2 canvas+4
+	blit map+3 canvas+6
+	blit map+4 canvas+8
+
+	; Line 2
+	blit map+5 canvas+64
+	blit map+6 canvas+64+2
+	blit map+7 canvas+64+4
+	blit map+8 canvas+64+6
+	blit map+9 canvas+64+8
+
+	; Line 3
+	blit map+10 canvas+128
+	blit map+11 canvas+128+2
+	blit map+12 canvas+128+4
+	blit map+13 canvas+128+6
+	blit map+14 canvas+128+8
+
+	; Line 4
+	blit map+15 canvas+192
+	blit map+16 canvas+192+2
+	blit map+17 canvas+192+4
+	blit map+18 canvas+192+6
+	blit map+19 canvas+192+8
+
+	; Line 5
+	blit map+20 canvas+256
+	blit map+21 canvas+256+2
+	blit map+22 canvas+256+4
+	blit map+23 canvas+256+6
+	blit map+24 canvas+256+8
+
 	rts
 	
 map
-	.byte 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
-	.byte 1,2,2,2,2,1,2,2,2,2,2,1,2,2,2,1,2,2,2,1
-	.byte 1,2,2,2,2,1,2,2,2,2,2,3,2,2,2,1,2,2,2,1
-	.byte 1,2,2,2,2,1,2,2,2,2,2,1,2,2,2,1,2,2,2,1
-	.byte 1,2,2,2,2,1,2,2,2,2,2,1,2,2,2,3,2,2,2,1
-	.byte 1,2,2,2,2,3,2,2,2,2,2,1,2,2,2,1,2,2,2,1
-	.byte 1,2,2,2,2,1,2,2,2,2,2,1,2,2,2,1,2,2,2,1
-	.byte 1,2,2,2,2,1,2,2,2,2,2,1,2,2,2,1,1,3,1,1
-	.byte 1,2,2,2,2,1,2,2,2,2,2,1,2,2,2,1,2,2,2,1
-	.byte 1,2,2,2,2,1,2,2,2,2,2,1,2,2,2,1,2,5,2,1
-	.byte 1,2,2,2,2,1,2,2,2,2,2,1,2,2,2,1,2,2,2,1
-	.byte 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
-	
+	.byte 1,1,1,1,1
+	.byte 1,2,2,2,1
+	.byte 1,2,2,2,1
+	.byte 1,2,2,2,1
+	.byte 1,1,1,1,1
+
 	.endp

@@ -15,8 +15,21 @@ antic5 = 5	    ; Antic mode 5
 
 dlist
 	.byte blank8, blank8, blank8
-	.byte antic5 + lms, <screen, >screen
-	.byte antic5, antic5, antic5, antic5, antic5, antic5
-	.byte antic5, antic5, antic5, antic5, antic5
+	.byte antic5 + lms, $00, $80
+	.byte antic5 + lms, $40, $80
+	.byte antic5 + lms, $80, $80
+	.byte antic5 + lms, $c0, $80
+	.byte antic5 + lms, $00, $81
+	.byte antic5 + lms, $40, $81
+	.byte antic5 + lms, $80, $81
+	.byte antic5 + lms, $c0, $81
+	.byte antic5 + lms, $00, $82
+	.byte antic5 + lms, $40, $82
+	.byte antic5 + lms, $80, $82
+	.byte antic5 + lms, $c0, $82
+	.byte antic5 + lms, $00, $83
+	.byte antic5 + lms, $40, $83
+	.byte antic5 + lms, $80, $83
+	.byte antic5 + lms, $c0, $83
 	.byte jvb, <dlist, >dlist
 	.endp
