@@ -36,17 +36,27 @@ game
 	lda STICK0
 	and #%1000
 	beq scroll_right
-	lda STICK0
-	and #%0010
-	beq scroll_down
-	lda STICK0
-	and #%0001
-	beq scroll_up
+	; lda STICK0
+	; and #%0010
+	; beq scroll_down
+	; lda STICK0
+	; and #%0001
+	; beq scroll_up
 
 	jmp game
 
+;.proc scroll (.byte offset)
+
+; .proc myproc (.byte myvar+1) .var
+; .var _myvar .byte
+; myvar mva #0 _myvar
+
+;     rts
+; 	.endp
+
+
 scroll_down
-	delay()
+	delay #10
 	ldy #16
 	ldx #4
 dn_loop
@@ -66,7 +76,7 @@ dn_loop
 	jmp game
 
 scroll_up
-	delay()
+	delay #10
 	ldy #16
 	ldx #4
 up_loop
@@ -86,7 +96,7 @@ up_loop
 	jmp game
 
 scroll_left
-	delay()
+	delay #10
 	ldy #16
 	ldx #4
 loop
@@ -105,7 +115,7 @@ loop
 	jmp game
 
 scroll_right
-	delay()
+	delay #10
 	ldy #16
 	ldx #4
 loop2
@@ -133,9 +143,9 @@ loop2
 * Proc: delay                                   *
 * Uses VBLANKs to wait a certain amount of time *
 * --------------------------------------------- *
-.proc delay
+.proc delay (.byte a) .reg
 loop
-	ldx #8         ; number of VBLANKs to wait
+	tax        		 ; number of VBLANKs to wait
 start
 	lda RTCLOK+2     ; check fastest moving RTCLOCK byte
 wait
@@ -275,7 +285,7 @@ loop
 ; blit the map into the middle of the canvas
 ; calculate the viewport position
 
-canvas = $8700
+canvas = $870e
 
 canvas_width = 64
 canvas_height = 64
