@@ -295,17 +295,10 @@ loop
 * Displays the current map                *
 * --------------------------------------- *
 .proc display_map
-; Canvas size is 256x256
-; Clear the canvas
-; blit the map into the middle of the canvas
-; calculate the viewport position
-
-
-
-; canvas_width = 64
-; canvas_height = 64
-; vert_offset = 12
-; hor_offset = 12
+canvas_width = 28
+canvas_height = 36
+horiz_margin = 6
+vert_margin = 10
 
 char = $98
 x = $99
@@ -316,12 +309,14 @@ map_pos_hi = $9c
 
 	mwa #map map_pos_lo
 
-	ldy #5
+	ldy #vert_margin
 	sty y
 vert
-	ldx #5
+	ldx #horiz_margin
 	stx x
 horiz
+	; Get new character and move map pointer
+	; TODO: Make a proc for this
 	ldy #0
 	mva (map_pos_lo),y char
 	clc
@@ -331,62 +326,37 @@ horiz
 	lda map_pos_hi
 	adc #0
 	sta map_pos_hi
-	
 	plot char x y
 	ldx x
 	ldy y
 
-	dex
+	inx
 	stx x
+	cpx #(canvas_width-horiz_margin)
 	bne horiz
 
-	dey
+	iny
 	sty y
+	cpy #(canvas_height-vert_margin)
 	bne vert
-
-	
-	; Line 1
-	; blit map canvas
-	; blit map+1 canvas+2
-	; blit map+2 canvas+4
-	; blit map+3 canvas+6
-	; blit map+4 canvas+8
-
-	;Line 2
-	; blit map+5 canvas+64
-	; blit map+6 canvas+64+2
-	; blit map+7 canvas+64+4
-	; blit map+8 canvas+64+6
-	; blit map+9 canvas+64+8
-
-	;Line 3
-	; blit map+10 canvas+128
-	; blit map+11 canvas+128+2
-	; blit map+12 canvas+128+4
-	; blit map+13 canvas+128+6
-	; blit map+14 canvas+128+8
-
-	;Line 4
-	; blit map+15 canvas+192
-	; blit map+16 canvas+192+2
-	; blit map+17 canvas+192+4
-	; blit map+18 canvas+192+6
-	; blit map+19 canvas+192+8
-
-	;Line 5
-	; blit map+20 canvas+256
-	; blit map+21 canvas+256+2
-	; blit map+22 canvas+256+4
-	; blit map+23 canvas+256+6
-	; blit map+24 canvas+256+8
 
 	rts
 	
 map
-	.byte 1,1,1,1,1
-	.byte 1,2,2,2,1
-	.byte 1,2,2,2,1
-	.byte 1,2,2,2,1
-	.byte 1,1,1,1,1
-
+	.byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+	.byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+	.byte 1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0
+	.byte 1,2,2,2,1,1,1,1,1,1,0,0,0,0,0,0
+	.byte 1,2,2,2,3,2,2,2,2,1,0,0,0,0,0,0
+	.byte 1,2,2,2,1,1,1,1,2,1,0,0,0,0,0,0
+	.byte 1,1,1,1,1,0,0,1,2,1,0,0,0,0,0,0
+	.byte 0,0,0,0,0,0,0,1,2,1,0,0,0,0,0,0
+	.byte 0,0,0,0,0,0,0,1,2,1,0,0,0,0,0,0
+	.byte 0,0,0,0,0,0,0,1,2,1,0,0,0,0,0,0
+	.byte 0,0,0,0,0,0,0,1,2,1,1,1,1,0,0,0
+	.byte 0,0,0,0,0,0,0,1,2,2,2,2,1,0,0,0
+	.byte 0,0,0,0,0,0,0,1,1,1,1,1,1,0,0,0
+	.byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+	.byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+	.byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 	.endp
