@@ -15,10 +15,10 @@
 ; PMG Memory Map: https://www.atarimagazines.com/compute/issue64/atari_animation.gif
 
 	org $2000
-map 	= $3000
+map 	= $4000 
 charset = $5000 ; Character Set
-pmg     = $6000 ; Player Missle Data
-canvas  = $8000
+pmg     = $6000 ; Player Missile Data
+canvas  = $7000
 
 tmp = $0092
 
@@ -59,32 +59,27 @@ down
 	scroll_rd #$80
 	jmp game
 
-	icl 'hardware.asm'
-	icl 'dlist.asm'
-	icl 'gfx.asm'
-	icl 'pmgdata.asm'
-	icl 'map.asm'
-
 * --------------------------------------------- *
 * Proc: delay                                   *
-* Uses VBLANKs to wait a certain amount of time *
+* Uses Real-time clock to delay x/60 seconds    *
 * --------------------------------------------- *
-.proc delay (.byte a) .reg
-loop
-	tax        		 ; number of VBLANKs to wait
+.proc delay (.byte x) .reg
 start
-	lda RTCLOK+2     ; check fastest moving RTCLOCK byte
+	lda RTCLK2
 wait
-	cmp RTCLOK+2     ; VBLANK will update this
-    beq wait         ; delay until VBLANK changes it
-    dex              ; delay for a number of VBLANKs
-    bpl start
+	cmp RTCLK2
+	beq wait
+
+	dex
+	bne start
+
 	rts
 	.endp
 
 .proc scroll_lu (.byte a) .reg
 	sta tmp
-	delay #5
+
+	delay #10
 	ldy #16
 	ldx #4
 loop
@@ -106,7 +101,9 @@ loop
 
 .proc scroll_rd (.byte a) .reg
 	sta tmp
-	delay #5
+
+	delay #10
+
 	ldy #16
 	ldx #4
 loop
@@ -243,8 +240,14 @@ next
 	inc canvas_ptr+1
 
 	lda map_ptr+1
-	cmp #>$4000
+	cmp #>(map + $1000)
 	bne loop
 	
 	rts
 	.endp
+
+	icl 'hardware.asm'
+	icl 'dlist.asm'
+	icl 'pmgdata.asm'
+	icl 'map.asm'
+	icl 'gfx.asm'

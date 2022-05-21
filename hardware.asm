@@ -20,3 +20,6 @@ HPOSP3 = $D003  ; Horizontal position of player 3
 STICK0 = $0278  ; Joystick 1 position
 STRIG0 = $0284  ; Joystick 1 button
 RTCLOK = $0012
+RTCLK0 = $0012
+RTCLK1 = $0013
+RTCLK2 = $0014
