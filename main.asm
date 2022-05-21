@@ -15,10 +15,10 @@
 ; PMG Memory Map: https://www.atarimagazines.com/compute/issue64/atari_animation.gif
 
 	org $2000
-
-screen  = $8000 ; Screen buffer
+map 	= $3000
 charset = $5000 ; Character Set
 pmg     = $6000 ; Player Missle Data
+canvas  = $8000
 
 tmp = $0092
 
@@ -28,7 +28,7 @@ tmp = $0092
 	clear_pmg()
 	load_pmg()
 	setup_pmg()
-	display_map()
+	copy_map_to_canvas()
 
 game
 	lda STICK0
@@ -50,19 +50,20 @@ left
 	scroll_lu #2
 	jmp game
 up
-	scroll_lu #$40
+	scroll_lu #$80
 	jmp game
 right
 	scroll_rd #2
 	jmp game
 down
-	scroll_rd #$40
+	scroll_rd #$80
 	jmp game
 
 	icl 'hardware.asm'
 	icl 'dlist.asm'
 	icl 'gfx.asm'
 	icl 'pmgdata.asm'
+	icl 'map.asm'
 
 * --------------------------------------------- *
 * Proc: delay                                   *
@@ -83,7 +84,7 @@ wait
 
 .proc scroll_lu (.byte a) .reg
 	sta tmp
-	delay #10
+	delay #5
 	ldy #16
 	ldx #4
 loop
@@ -105,7 +106,7 @@ loop
 
 .proc scroll_rd (.byte a) .reg
 	sta tmp
-	delay #10
+	delay #5
 	ldy #16
 	ldx #4
 loop
@@ -215,148 +216,35 @@ loop
 	rts
 	.endp
 
-* --------------------------------------- *
-* Macro: blit_row                         *
-* Copies one line of map to screen        *
-* --------------------------------------- *
-.macro blit_row map, screen
-	ldx #0
+.proc copy_map_to_canvas
+map_ptr = $94
+canvas_ptr = $96
+
+	mwa #map map_ptr
+	mwa #canvas canvas_ptr
+
 	ldy #0
 loop
-	lda :map,x
+	lda (map_ptr),y
 	asl
-	sta :screen,y
-	iny
-	clc
-	adc #1
-	sta :screen,y
-	iny
-	inx
-	cpx #20
-	bne loop
-	.endm
-
-.macro blit src, dest
-	lda src
-	asl
-	sta dest
-	clc
-	adc #1
-	sta dest+1
-	rts
-	.endm
-
-.proc plot (.byte a .byte x .byte y) .reg
-canvas = $870e
-tile = $95
-pos_x = $96
-pos_y = $97
-
-	sta tile
-	stx pos_x
-	;iny ; inc y so that the loop works even with 0
-	sty pos_y
-
-	mwa #canvas tmp
-
-	; Increase tmp by how many rows there are
-loop
- 	lda tmp
- 	clc
- 	adc #$40
- 	sta tmp
-	lda tmp+1
- 	adc #0
- 	sta tmp+1
- 	dey
- 	bne loop
-
-	; Multiply canvas x location by 2
-	lda pos_x
-	asl
-	sta pos_x
-	tay
-
-	; Load tile back into accumulator
-	lda tile
-
-	asl
-	sta (tmp),y
-	clc
-	adc #1
-	iny
-	sta (tmp),y
-	rts
-	.endp
-
-
-* --------------------------------------- *
-* Proc: display_map                       *
-* Displays the current map                *
-* --------------------------------------- *
-.proc display_map
-canvas_width = 28
-canvas_height = 36
-horiz_margin = 6
-vert_margin = 10
-
-char = $98
-x = $99
-y = $9a
-
-map_pos_lo = $9b
-map_pos_hi = $9c
-
-	mwa #map map_pos_lo
-
-	ldy #vert_margin
-	sty y
-vert
-	ldx #horiz_margin
-	stx x
-horiz
-	; Get new character and move map pointer
-	; TODO: Make a proc for this
-	ldy #0
-	mva (map_pos_lo),y char
-	clc
-	lda map_pos_lo
-	adc #1
-	sta map_pos_lo
-	lda map_pos_hi
-	adc #0
-	sta map_pos_hi
-	plot char x y
-	ldx x
-	ldy y
-
-	inx
-	stx x
-	cpx #(canvas_width-horiz_margin)
-	bne horiz
-
-	iny
-	sty y
-	cpy #(canvas_height-vert_margin)
-	bne vert
-
-	rts
+	sta (canvas_ptr),y
 	
-map
-	.byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-	.byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-	.byte 1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0
-	.byte 1,2,2,2,1,1,1,1,1,1,0,0,0,0,0,0
-	.byte 1,2,2,2,3,2,2,2,2,1,0,0,0,0,0,0
-	.byte 1,2,2,2,1,1,1,1,2,1,0,0,0,0,0,0
-	.byte 1,1,1,1,1,0,0,1,2,1,0,0,0,0,0,0
-	.byte 0,0,0,0,0,0,0,1,2,1,0,0,0,0,0,0
-	.byte 0,0,0,0,0,0,0,1,2,1,0,0,0,0,0,0
-	.byte 0,0,0,0,0,0,0,1,2,1,0,0,0,0,0,0
-	.byte 0,0,0,0,0,0,0,1,2,1,1,1,1,0,0,0
-	.byte 0,0,0,0,0,0,0,1,2,2,2,2,1,0,0,0
-	.byte 0,0,0,0,0,0,0,1,1,1,1,1,1,0,0,0
-	.byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-	.byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-	.byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+	inc canvas_ptr
+	bne next 
+	inc canvas_ptr+1
+
+next
+	add #1
+	sta (canvas_ptr),y
+	iny
+	bne loop
+
+	inc map_ptr+1
+	inc canvas_ptr+1
+
+	lda map_ptr+1
+	cmp #>$4000
+	bne loop
+	
+	rts
 	.endp
