@@ -20,7 +20,7 @@ screen  = $8000 ; Screen buffer
 charset = $5000 ; Character Set
 pmg     = $6000 ; Player Missle Data
 
-tmp = $92
+tmp = $0092
 
 	setup_screen()
 	setup_colors()
@@ -124,7 +124,6 @@ loop
 
 	rts
 	.endp
-
 
 * --------------------------------------- *
 * Proc: setup_colors                      *
@@ -238,13 +237,59 @@ loop
 	.endm
 
 .macro blit src, dest
-	lda :src
+	lda src
 	asl
-	sta :dest
+	sta dest
 	clc
 	adc #1
-	sta :dest+1
+	sta dest+1
+	rts
 	.endm
+
+.proc plot (.byte a .byte x .byte y) .reg
+canvas = $870e
+tile = $95
+pos_x = $96
+pos_y = $97
+
+	sta tile
+	stx pos_x
+	;iny ; inc y so that the loop works even with 0
+	sty pos_y
+
+	mwa #canvas tmp
+
+	; Increase tmp by how many rows there are
+loop
+ 	lda tmp
+ 	clc
+ 	adc #$40
+ 	sta tmp
+	lda tmp+1
+ 	adc #0
+ 	sta tmp+1
+ 	dey
+ 	bne loop
+
+	; Multiply canvas x location by 2
+	lda pos_x
+	asl
+	sta pos_x
+	tay
+
+	; Load tile back into accumulator
+	lda tile
+
+	asl
+	sta (tmp),y
+	clc
+	adc #1
+	iny
+	sta (tmp),y
+	rts
+	.endp
+
+
 * --------------------------------------- *
 * Proc: display_map                       *
 * Displays the current map                *
@@ -255,47 +300,85 @@ loop
 ; blit the map into the middle of the canvas
 ; calculate the viewport position
 
-canvas = $870e
 
-canvas_width = 64
-canvas_height = 64
-vert_offset = 12
-hor_offset = 12
 
+; canvas_width = 64
+; canvas_height = 64
+; vert_offset = 12
+; hor_offset = 12
+
+char = $98
+x = $99
+y = $9a
+
+map_pos_lo = $9b
+map_pos_hi = $9c
+
+	mwa #map map_pos_lo
+
+	ldy #5
+	sty y
+vert
+	ldx #5
+	stx x
+horiz
+	ldy #0
+	mva (map_pos_lo),y char
+	clc
+	lda map_pos_lo
+	adc #1
+	sta map_pos_lo
+	lda map_pos_hi
+	adc #0
+	sta map_pos_hi
+	
+	plot char x y
+	ldx x
+	ldy y
+
+	dex
+	stx x
+	bne horiz
+
+	dey
+	sty y
+	bne vert
+
+	
 	; Line 1
-	blit map canvas
-	blit map+1 canvas+2
-	blit map+2 canvas+4
-	blit map+3 canvas+6
-	blit map+4 canvas+8
+	; blit map canvas
+	; blit map+1 canvas+2
+	; blit map+2 canvas+4
+	; blit map+3 canvas+6
+	; blit map+4 canvas+8
 
-	; Line 2
-	blit map+5 canvas+64
-	blit map+6 canvas+64+2
-	blit map+7 canvas+64+4
-	blit map+8 canvas+64+6
-	blit map+9 canvas+64+8
+	;Line 2
+	; blit map+5 canvas+64
+	; blit map+6 canvas+64+2
+	; blit map+7 canvas+64+4
+	; blit map+8 canvas+64+6
+	; blit map+9 canvas+64+8
 
-	; Line 3
-	blit map+10 canvas+128
-	blit map+11 canvas+128+2
-	blit map+12 canvas+128+4
-	blit map+13 canvas+128+6
-	blit map+14 canvas+128+8
+	;Line 3
+	; blit map+10 canvas+128
+	; blit map+11 canvas+128+2
+	; blit map+12 canvas+128+4
+	; blit map+13 canvas+128+6
+	; blit map+14 canvas+128+8
 
-	; Line 4
-	blit map+15 canvas+192
-	blit map+16 canvas+192+2
-	blit map+17 canvas+192+4
-	blit map+18 canvas+192+6
-	blit map+19 canvas+192+8
+	;Line 4
+	; blit map+15 canvas+192
+	; blit map+16 canvas+192+2
+	; blit map+17 canvas+192+4
+	; blit map+18 canvas+192+6
+	; blit map+19 canvas+192+8
 
-	; Line 5
-	blit map+20 canvas+256
-	blit map+21 canvas+256+2
-	blit map+22 canvas+256+4
-	blit map+23 canvas+256+6
-	blit map+24 canvas+256+8
+	;Line 5
+	; blit map+20 canvas+256
+	; blit map+21 canvas+256+2
+	; blit map+22 canvas+256+4
+	; blit map+23 canvas+256+6
+	; blit map+24 canvas+256+8
 
 	rts
 	
