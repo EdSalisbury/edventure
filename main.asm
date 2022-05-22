@@ -20,6 +20,14 @@ charset = $5000 ; Character Set
 pmg     = $6000 ; Player Missile Data
 canvas  = $7000
 
+stick_up    = 1
+stick_down  = 2
+stick_left  = 4
+stick_right = 8
+
+tile_width = 2
+line_width = 128
+
 tmp = $0092
 
 	setup_screen()
@@ -32,31 +40,34 @@ tmp = $0092
 
 game
 	lda STICK0
-	and #%0100
-	beq left
-	lda STICK0
-	and #%1000
-	beq right
-	lda STICK0
-	and #%0010
-	beq down
-	lda STICK0
-	and #%0001
+	and #stick_up
 	beq up
+
+	lda STICK0
+	and #stick_down
+	beq down
+
+	lda STICK0
+	and #stick_left
+	beq left
+
+	lda STICK0
+	and #stick_right
+	beq right
 
 	jmp game
 
 left
-	scroll_lu #2
+	scroll_lu #tile_width
 	jmp game
 up
-	scroll_lu #$80
+	scroll_lu #line_width
 	jmp game
 right
-	scroll_rd #2
+	scroll_rd #tile_width
 	jmp game
 down
-	scroll_rd #$80
+	scroll_rd #line_width
 	jmp game
 
 * --------------------------------------------- *
@@ -77,6 +88,8 @@ wait
 	.endp
 
 .proc scroll_lu (.byte a) .reg
+tmp = $92
+
 	sta tmp
 
 	delay #10
@@ -100,6 +113,7 @@ loop
 	.endp
 
 .proc scroll_rd (.byte a) .reg
+tmp = $92
 	sta tmp
 
 	delay #10
