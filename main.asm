@@ -17,9 +17,9 @@
 	org $2000
 
 map     = $3000 ; Map
-canvas  = $4000 ; Screen buffer
-charset = $5000 ; Character Set
-pmg     = $6000 ; Player Missle Data
+charset = $4000 ; Character Set
+pmg     = $5000 ; Player Missle Data
+canvas  = $6000 ; Screen buffer
 
 	setup_screen()
 	setup_colors()
@@ -31,11 +31,7 @@ pmg     = $6000 ; Player Missle Data
 
 	jmp *
 
-	icl 'hardware.asm'
-	icl 'dlist.asm'
-	icl 'gfx.asm'
-	icl 'pmgdata.asm'
-	icl 'map.asm'
+
 
 * --------------------------------------- *
 * Proc: setup_colors                      *
@@ -184,3 +180,9 @@ next
 
 	rts
 	.endp
+
+	icl 'hardware.asm'
+	icl 'dlist.asm'
+	icl 'pmgdata.asm'
+	icl 'map.asm'
+	icl 'gfx.asm'
