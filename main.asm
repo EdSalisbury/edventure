@@ -3,7 +3,7 @@
 ; Mission: EdPossible
 ; youtube.com/MissionEdPossible
 ; Assemble in MADS: mads -l -t main.asm
-; Episode 8: Tile-based maps
+; Episode 9: Bigger map!
 
 ; ATASCII Table: https://www.atariwiki.org/wiki/attach/Atari%20ATASCII%20Table/ascii_atascii_table.pdf
 ; ATASCII 0-31 Screen code 64-95
@@ -16,7 +16,8 @@
 
 	org $2000
 
-screen  = $4000 ; Screen buffer
+map     = $3000 ; Map
+canvas  = $4000 ; Screen buffer
 charset = $5000 ; Character Set
 pmg     = $6000 ; Player Missle Data
 
@@ -26,7 +27,7 @@ pmg     = $6000 ; Player Missle Data
 	clear_pmg()
 	load_pmg()
 	setup_pmg()
-	display_map()
+	copy_map_to_canvas()
 
 	jmp *
 
@@ -34,6 +35,7 @@ pmg     = $6000 ; Player Missle Data
 	icl 'dlist.asm'
 	icl 'gfx.asm'
 	icl 'pmgdata.asm'
+	icl 'map.asm'
 
 * --------------------------------------- *
 * Proc: setup_colors                      *
@@ -147,38 +149,38 @@ loop
 	.endm
 
 * --------------------------------------- *
-* Proc: display_map                       *
-* Displays the current map                *
+* Proc: copy_map_to_canvas                *
+* Copies map to canvas with interpolation *
 * --------------------------------------- *
-.proc display_map
-	ldx #0
+.proc copy_map_to_canvas
+map_ptr = $92
+canvas_ptr = $94
+
+	mwa #map map_ptr
+	mwa #canvas canvas_ptr
+
+	ldy #0
 loop
-	blit_row map, screen
-	blit_row map+20, screen+40
-	blit_row map+40, screen+80
-	blit_row map+60, screen+120
-	blit_row map+80, screen+160
-	blit_row map+100, screen+200
-	blit_row map+120, screen+240
-	blit_row map+140, screen+280
-	blit_row map+160, screen+320
-	blit_row map+180, screen+360
-	blit_row map+200, screen+400
-	blit_row map+220, screen+440
+	lda (map_ptr),y
+	asl
+	sta (canvas_ptr),y
+
+	inc canvas_ptr
+	bne next
+	inc canvas_ptr+1
+
+next
+	add #1
+	sta (canvas_ptr),y
+	iny
+	bne loop
+
+	inc map_ptr+1
+	inc canvas_ptr+1
+
+	lda map_ptr+1
+	cmp #>(map + $1000)
+	bne loop
+
 	rts
-	
-map
-	.byte 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
-	.byte 1,2,2,2,2,1,2,2,2,2,2,1,2,2,2,1,2,2,2,1
-	.byte 1,2,2,2,2,1,2,2,2,2,2,3,2,2,2,1,2,2,2,1
-	.byte 1,2,2,2,2,1,2,2,2,2,2,1,2,2,2,1,2,2,2,1
-	.byte 1,2,2,2,2,1,2,2,2,2,2,1,2,2,2,3,2,2,2,1
-	.byte 1,2,2,2,2,3,2,2,2,2,2,1,2,2,2,1,2,2,2,1
-	.byte 1,2,2,2,2,1,2,2,2,2,2,1,2,2,2,1,2,2,2,1
-	.byte 1,2,2,2,2,1,2,2,2,2,2,1,2,2,2,1,1,3,1,1
-	.byte 1,2,2,2,2,1,2,2,2,2,2,1,2,2,2,1,2,2,2,1
-	.byte 1,2,2,2,2,1,2,2,2,2,2,1,2,2,2,1,2,5,2,1
-	.byte 1,2,2,2,2,1,2,2,2,2,2,1,2,2,2,1,2,2,2,1
-	.byte 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
-	
 	.endp
