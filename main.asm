@@ -17,9 +17,9 @@
 	org $2000
 
 map     = $3000 ; Map
-canvas  = $4000 ; Screen buffer
-charset = $5000 ; Character Set
-pmg     = $6000 ; Player Missle Data
+charset = $4000 ; Character Set
+pmg     = $5000 ; Player Missile Data
+canvas  = $6000 ; Screen buffer
 
 	setup_screen()
 	setup_colors()
