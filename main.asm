@@ -3,7 +3,7 @@
 ; Mission: EdPossible
 ; youtube.com/MissionEdPossible
 ; Assemble in MADS: mads -l -t main.asm
-; Episode 8: Tile-based maps
+; Episode 11: Scrolling
 
 ; ATASCII Table: https://www.atariwiki.org/wiki/attach/Atari%20ATASCII%20Table/ascii_atascii_table.pdf
 ; ATASCII 0-31 Screen code 64-95
@@ -16,9 +16,15 @@
 
 	org $2000
 
-screen  = $4000 ; Screen buffer
-charset = $5000 ; Character Set
-pmg     = $6000 ; Player Missle Data
+map     = $3000 ; Map
+charset = $4000 ; Character Set
+pmg     = $5000 ; Player Missle Data
+canvas  = $6000 ; Screen buffer
+
+stick_up    = %0001
+stick_down  = %0010 
+stick_left  = %0100
+stick_right = %1000
 
 	setup_screen()
 	setup_colors()
@@ -26,14 +32,118 @@ pmg     = $6000 ; Player Missle Data
 	clear_pmg()
 	load_pmg()
 	setup_pmg()
-	display_map()
+	copy_map_to_canvas()
 
-	jmp *
+game
+	lda STICK0
+	and #stick_up
+	beq up
 
-	icl 'hardware.asm'
-	icl 'dlist.asm'
-	icl 'gfx.asm'
-	icl 'pmgdata.asm'
+	lda STICK0
+	and #stick_down
+	beq down
+
+	lda STICK0
+	and #stick_left
+	beq left
+
+	lda STICK0
+	and #stick_right
+	beq right
+
+	jmp game
+
+up
+	delay #5
+	scroll_lu #$80
+	jmp game
+
+down
+	delay #5
+	scroll_rd #$80
+	jmp game
+
+left
+	delay #5
+	scroll_lu #2
+	jmp game
+
+right
+	delay #5
+	scroll_rd #2
+	jmp game
+
+* --------------------------------------- *
+* Proc: delay                             *
+* Uses Real-time clock to delay x/60 secs *
+* --------------------------------------- *
+.proc delay (.byte x) .reg
+start
+	lda RTCLK2
+wait
+	cmp RTCLK2
+	beq wait
+
+	dex
+	bne start
+
+	rts
+	.endp
+
+* --------------------------------------- *
+* Proc: scroll_lu                         *
+* Scroll left or up                       *
+* --------------------------------------- *
+.proc scroll_lu (.byte a) .reg
+tmp = $92
+	sta tmp
+
+	ldy #12
+	ldx #4
+loop
+	sec
+	lda setup_screen.dlist,x
+	sbc tmp
+	sta setup_screen.dlist,x
+	inx
+	lda setup_screen.dlist,x
+	sbc #0
+	sta setup_screen.dlist,x
+	inx
+	inx
+	dey
+	bne loop
+
+	rts
+	.endp
+
+* --------------------------------------- *
+* Proc: scroll_rd                         *
+* Scroll right or down                    *
+* --------------------------------------- *
+.proc scroll_rd (.byte a) .reg
+tmp = $92
+	sta tmp
+
+	ldy #12
+	ldx #4
+loop
+	clc
+	lda setup_screen.dlist,x
+	adc tmp
+	sta setup_screen.dlist,x
+	inx
+	lda setup_screen.dlist,x
+	adc #0
+	sta setup_screen.dlist,x
+	inx
+	inx
+	dey
+	bne loop
+
+	rts
+	.endp
+
 
 * --------------------------------------- *
 * Proc: setup_colors                      *
@@ -126,59 +236,44 @@ loop
 	.endp
 
 * --------------------------------------- *
-* Macro: blit_row                         *
-* Copies one line of map to screen        *
+* Proc: copy_map_to_canvas                *
+* Copies map to canvas with interpolation *
 * --------------------------------------- *
-.macro blit_row map, screen
-	ldx #0
+.proc copy_map_to_canvas
+map_ptr = $92
+canvas_ptr = $94
+
+	mwa #map map_ptr
+	mwa #canvas canvas_ptr
+
 	ldy #0
 loop
-	lda :map,x
+	lda (map_ptr),y
 	asl
-	sta :screen,y
-	iny
-	clc
-	adc #1
-	sta :screen,y
-	iny
-	inx
-	cpx #20
-	bne loop
-	.endm
+	sta (canvas_ptr),y
 
-* --------------------------------------- *
-* Proc: display_map                       *
-* Displays the current map                *
-* --------------------------------------- *
-.proc display_map
-	ldx #0
-loop
-	blit_row map, screen
-	blit_row map+20, screen+40
-	blit_row map+40, screen+80
-	blit_row map+60, screen+120
-	blit_row map+80, screen+160
-	blit_row map+100, screen+200
-	blit_row map+120, screen+240
-	blit_row map+140, screen+280
-	blit_row map+160, screen+320
-	blit_row map+180, screen+360
-	blit_row map+200, screen+400
-	blit_row map+220, screen+440
+	inc canvas_ptr
+	bne next
+	inc canvas_ptr+1
+
+next
+	add #1
+	sta (canvas_ptr),y
+	iny
+	bne loop
+
+	inc map_ptr+1
+	inc canvas_ptr+1
+
+	lda map_ptr+1
+	cmp #>(map + $1000)
+	bne loop
+
 	rts
-	
-map
-	.byte 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
-	.byte 1,2,2,2,2,1,2,2,2,2,2,1,2,2,2,1,2,2,2,1
-	.byte 1,2,2,2,2,1,2,2,2,2,2,3,2,2,2,1,2,2,2,1
-	.byte 1,2,2,2,2,1,2,2,2,2,2,1,2,2,2,1,2,2,2,1
-	.byte 1,2,2,2,2,1,2,2,2,2,2,1,2,2,2,3,2,2,2,1
-	.byte 1,2,2,2,2,3,2,2,2,2,2,1,2,2,2,1,2,2,2,1
-	.byte 1,2,2,2,2,1,2,2,2,2,2,1,2,2,2,1,2,2,2,1
-	.byte 1,2,2,2,2,1,2,2,2,2,2,1,2,2,2,1,1,3,1,1
-	.byte 1,2,2,2,2,1,2,2,2,2,2,1,2,2,2,1,2,2,2,1
-	.byte 1,2,2,2,2,1,2,2,2,2,2,1,2,2,2,1,2,5,2,1
-	.byte 1,2,2,2,2,1,2,2,2,2,2,1,2,2,2,1,2,2,2,1
-	.byte 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
-	
 	.endp
+
+	icl 'hardware.asm'
+	icl 'dlist.asm'
+	icl 'pmgdata.asm'
+	icl 'map.asm'
+	icl 'gfx.asm'
