@@ -16,10 +16,12 @@
 
 	org $2000
 
-map     	= $3000 ; Map
-charset 	= $4000 ; Character Set
-pmg     	= $5000 ; Player Missle Data
-screen  	= $6000 ; Screen buffer
+map     			= $3000 ; Map
+pmg     			= $4000 ; Player Missle Data
+charset_dungeon_a 	= $5000 ; Main character set
+charset_outdoor_a 	= $6000 ; Character Set for outdoors
+monsters_a          = $7000 ; Monster characters
+screen  			= $8000 ; Screen buffer
 
 stick_up    = %0001
 stick_down  = %0010 
@@ -43,13 +45,21 @@ screen_height = 11
 map_width = 49
 map_height = 49
 
+; Colors
+white = $0a
+red = $22
+black = $00
+peach = $2c
+blue = $92
+gold = $18
+
 	lda #16
 	sta player_x
 	sta player_y
 
 	setup_screen()
 	setup_colors()
-	mva #>charset CHBAS
+	mva #>charset_dungeon_a CHBAS
 	clear_pmg()
 	load_pmg()
 	setup_pmg()
@@ -144,23 +154,17 @@ wait
 * Sets up colors                          *
 * --------------------------------------- *
 .proc setup_colors
-med_gray = $06
-lt_gray = $0a
-green = $c2
-brown = $22
-black = $00
-peach = $2c
-blue = $80
+
 
 	; Character Set Colors
-	mva #med_gray COLOR0 ; %01
-	mva #lt_gray COLOR1  ; %10
-	mva #green COLOR2	 ; %11
-	mva #brown COLOR3    ; %11 (inverse)
-	mva #black COLOR4    ; %00
+	mva #white COLOR0 	; %01
+	mva #red COLOR1  	; %10
+	mva #blue COLOR2	; %11
+	mva #gold COLOR3    ; %11 (inverse)
+	mva #black COLOR4   ; %00
 
 	; Player-Missile Colors
-	mva #brown PCOLR0
+	mva #red PCOLR0
 	mva #peach PCOLR1
 	mva #blue PCOLR2
 	mva #black PCOLR3
@@ -327,44 +331,10 @@ loop
 	rts
 .endp
 
-
-* --------------------------------------- *
-* Proc: copy_map_to_screen                *
-* Copies map to screen with interpolation *
-* --------------------------------------- *
-.proc copy_map_to_screen
-
-
-
-
-	ldy #0
-loop
-	lda (map_ptr),y
-	asl
-	sta (screen_ptr),y
-
-	inc screen_ptr
-	bne next
-	inc screen_ptr+1
-
-next
-	add #1
-	sta (screen_ptr),y
-	iny
-	bne loop
-
-	inc map_ptr+1
-	inc screen_ptr+1
-
-	lda map_ptr+1
-	cmp #>(map + $1000)
-	bne loop
-
-	rts
-	.endp
-
 	icl 'hardware.asm'
 	icl 'dlist.asm'
 	icl 'pmgdata.asm'
 	icl 'map.asm'
-	icl 'gfx.asm'
+	icl 'charset_dungeon_a.asm'
+	icl 'charset_outdoor_a.asm'
+	icl 'monsters_a.asm'
