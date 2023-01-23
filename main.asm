@@ -225,7 +225,7 @@ loop
 	mva #46 SDMCTL ; Single Line resolution
 	mva #3 GRACTL  ; Enable PMG
 	mva #1 GRPRIOR ; Give players priority
-	lda #120
+	lda #92
 	sta HPOSP0
 	sta HPOSP1
 	sta HPOSP2
@@ -233,20 +233,27 @@ loop
 	rts
 	.endp
 
+.macro inc16 addr
+	inc :addr
+	bne skip_carry
+	inc :addr + 1
+skip_carry
+	.endm
+
 .macro blit_tile
 	lda (map_ptr),y			; Load the tile from the map
 	asl						; Multiply by two to get left character
 	sta (screen_ptr),y		; Store the left character
-	inc screen_ptr			; Advance the screen pointer
+	inc16 screen_ptr		; Advance the screen pointer
 	add #1					; Add one to get right character
 	sta (screen_ptr),y		; Store the right character
-	adw map_ptr #1			; Advance the map pointer
-	adw screen_ptr #1		; Advance the screen pointer	
+	inc16 map_ptr			; Advance the map pointer
+	inc16 screen_ptr		; Advance the screen pointer	
 	.endm
 
-.macro blit_circle_line body, map_space, screen_space
+.macro blit_circle_line body, map_space, screen_space_left, screen_space_right
 	adw map_ptr #:map_space
-	adw screen_ptr #:screen_space
+	adw screen_ptr #:screen_space_left
 	ldx #:body
 loop
 	blit_tile()
@@ -255,7 +262,7 @@ loop
 
 	adw map_ptr #:map_space
 	adw map_ptr #(map_width - screen_width)
-	adw screen_ptr #:screen_space
+	adw screen_ptr #:screen_space_right
 	adw screen_ptr #(screen_char_width - screen_width * 2)
 	.endm
 
@@ -294,16 +301,16 @@ loop
 	adw map_ptr #(map_width * 2)
 	
 	; Top 3 lines of the circle
-	blit_circle_line 5, 7, 14
-	blit_circle_line 7, 6, 12
-	blit_circle_line 9, 5, 10
+	blit_circle_line 5, 7, 7, 21
+	blit_circle_line 7, 6, 5, 19
+	blit_circle_line 9, 5, 3, 17
 
 	; Line above the player
 	adw map_ptr #9				; Advance to the tile above the player
 	lda (map_ptr),y				; Load in the tile
 	sta up_tile					; Store the tile
 	sbw map_ptr #9				; Undo math
-	blit_circle_line 9, 5, 10
+	blit_circle_line 9, 5, 3, 17
 
 	adw map_ptr #8				; Advance to the tile to the left of the player
 	lda (map_ptr),y				; Load in the tile
@@ -315,19 +322,19 @@ loop
 	lda (map_ptr),y				; Load in the tile
 	sta right_tile				; Store the tile
 	sbw map_ptr #10				; Undo math
-	blit_circle_line 9, 5, 10
+	blit_circle_line 9, 5, 3, 17
 
 	; Line below the player
 	adw map_ptr #9				; Advance to the tile below the player
 	lda (map_ptr),y				; Load in the tile
 	sta down_tile				; Store the tile
 	sbw map_ptr #9				; Undo math
-	blit_circle_line 9, 5, 10
+	blit_circle_line 9, 5, 3, 17
 	
 	; Bottom 3 lines of the circle
-	blit_circle_line 9, 5, 10
-	blit_circle_line 7, 6, 12
-	blit_circle_line 5, 7, 14
+	blit_circle_line 9, 5, 3, 17
+	blit_circle_line 7, 6, 5, 19
+	blit_circle_line 5, 7, 7, 21
 	rts
 .endp
 
