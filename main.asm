@@ -21,6 +21,7 @@ pmg     			= $4000 ; Player Missle Data
 charset_dungeon_a 	= $5000 ; Main character set
 charset_outdoor_a 	= $6000 ; Character Set for outdoors
 monsters_a          = $7000 ; Monster characters
+status_line			= $6400
 screen  			= $8000 ; Screen buffer
 
 stick_up    = %0001
@@ -38,6 +39,8 @@ down_tile	= $9b
 left_tile	= $9c
 right_tile	= $9d
 on_tile		= $9e
+
+status_ptr  = $a0
 
 screen_char_width = 40
 screen_width = 19
@@ -57,9 +60,9 @@ gold = $18
 	sta player_x
 	sta player_y
 
+	mva #>charset_outdoor_a CHBASE
 	setup_screen()
 	setup_colors()
-	mva #>charset_dungeon_a CHBAS
 	clear_pmg()
 	load_pmg()
 	setup_pmg()
@@ -67,6 +70,7 @@ gold = $18
 game
 	read_joystick()
 	blit_screen()
+	update_ui()
 	jmp game
 
 .proc read_joystick
@@ -291,14 +295,46 @@ loop
 	rts
 	.endp
 
+.proc update_ui
+	mwa #screen screen_ptr
+
+	; Border
+	ldy #0
+	ldx #10
+loop
+	; Left
+	lda #1
+	sta (screen_ptr),y
+	adw screen_ptr #23
+	
+	; Middle
+	lda #1
+	sta (screen_ptr),y
+	adw screen_ptr #16
+
+	; Right
+	lda #1
+	sta (screen_ptr),y
+	inc16 screen_ptr
+	
+	dex
+	bne loop
+
+	lda #14
+	sta (screen_ptr),y
+	
+	
+	rts
+	.endp
+
 .proc blit_screen
 	map_offset()
 
 	ldy #0
 
-	; 2 Blank lines
-	adw screen_ptr #(screen_char_width * 2)
-	adw map_ptr #(map_width * 2)
+	; 1 Blank lines
+	adw screen_ptr #(screen_char_width)
+	adw map_ptr #(map_width)
 	
 	; Top 3 lines of the circle
 	blit_circle_line 5, 7, 7, 21
