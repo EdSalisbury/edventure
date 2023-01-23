@@ -16,10 +16,10 @@ antic5 = 5	    ; Antic mode 5
 	lda #NMIEN_VBI | NMIEN_DLI
 	sta NMIEN
 	
-	; ldx #>vbi
-	; ldy #<vbi
-	; lda #7
-	; jsr SETVBV
+	ldx #>vbi
+	ldy #<vbi
+	lda #7
+	jsr SETVBV
  
 	rts
 
@@ -47,8 +47,7 @@ dli2
 	mva #>charset_outdoor_a CHBASE
 	pla
 	rti
-	
 
-; vbi
-; 	mwa #dli1 VDSLST
-; 	jmp XITVBV
+vbi
+	mwa #dli1 VDSLST
+	jmp XITVBV
