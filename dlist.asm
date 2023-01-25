@@ -33,21 +33,40 @@ dlist
 
 dli1
 	pha
+	txa
+	pha
+	tya
+	pha
 	lda #1
 	sta WSYNC
 	mva #>charset_dungeon_a CHBASE
+	game()
+	pla
+	tay
+	pla
+	tax
 	pla
 	mwa #dli2 VDSLST
 	rti
 
 dli2
 	pha
+	txa
+	pha
+	tya
+	pha
 	lda #1
 	sta WSYNC
 	mva #>charset_outdoor_a CHBASE
 	pla
+	tay
+	pla
+	tax
+	pla
 	rti
 
 vbi
+	;read_joystick()
+	;blit_playfield()
 	mwa #dli1 VDSLST
 	jmp XITVBV
