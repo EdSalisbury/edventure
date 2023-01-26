@@ -16,10 +16,10 @@ antic5 = 5	    ; Antic mode 5
 	lda #NMIEN_VBI | NMIEN_DLI
 	sta NMIEN
 	
-	ldx #>vbi
-	ldy #<vbi
-	lda #7
-	jsr SETVBV
+	; ldx #>vbi
+	; ldy #<vbi
+	; lda #7
+	; jsr SETVBV
  
 	rts
 
@@ -40,7 +40,7 @@ dli1
 	lda #1
 	sta WSYNC
 	mva #>charset_dungeon_a CHBASE
-	game()
+	blit_playfield()
 	pla
 	tay
 	pla
@@ -63,6 +63,7 @@ dli2
 	pla
 	tax
 	pla
+	mwa #dli1 VDSLST
 	rti
 
 vbi

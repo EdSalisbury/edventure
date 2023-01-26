@@ -44,6 +44,9 @@ on_tile		= $9e
 status_ptr  = $a0
 tmp_ptr 	= $a2
 
+game_timer = $a4
+game_tick = 10
+
 screen_char_width = 40
 screen_width = 19
 screen_height = 11
@@ -76,16 +79,26 @@ gold = $2a
 	blit_playfield()
 	update_player_tiles()
 
-forever
-	jmp forever
+	lda RTCLK2
+	add #game_tick
+	sta game_timer 
+game
+	lda RTCLK2
+	cmp game_timer
+	bne game
 
-.proc game
 	read_joystick()
-	rts
-	.endp
+	lda RTCLK2
+	add #game_tick
+	sta game_timer
+	
+	jmp game
 
 .proc read_joystick
-	
+	lda STICK0
+	and #stick_right
+	beq move_right
+
 	lda STICK0
 	and #stick_up
 	beq move_up
@@ -98,79 +111,41 @@ forever
 	and #stick_left
 	beq move_left
 
-	lda STICK0
-	and #stick_right
-	beq move_right
-
 	jmp done
 
 move_up
 	lda up_tile
 	cmp #55
 	bcc done
-	;delay #5
-	lda player_y
-	sub #1
-	sta player_y
+	dec player_y
 	update_player_tiles()
-	blit_playfield()
 	jmp done
 
 move_down
 	lda down_tile
 	cmp #55
 	bcc done
-	;delay #5
-	lda player_y
-	add #1
-	sta player_y
+	inc player_y
 	update_player_tiles()
-	blit_playfield()
 	jmp done
 
 move_left
 	lda left_tile
 	cmp #55
 	bcc done
-	;delay #5
-	lda player_x
-	sub #1
-	sta player_x
+	dec player_x
 	update_player_tiles()
-	blit_playfield()
 	jmp done
 
 move_right
 	lda right_tile
 	cmp #55
 	bcc done
-	;delay #5
-	lda player_x
-	add #1
-	sta player_x
+	inc player_x
 	update_player_tiles()
-	blit_playfield()
 	jmp done
 
 done
-	rts
-	.endp
-
-* --------------------------------------- *
-* Proc: delay                             *
-* Uses Real-time clock to delay x/60 secs *
-* --------------------------------------- *
-.proc delay (.byte x) .reg
-start
-	lda RTCLK2
-	sta WSYNC
-wait
-	cmp RTCLK2
-	beq wait
-
-	dex
-	bne start
-	
 	rts
 	.endp
 
@@ -256,12 +231,7 @@ loop
 	rts
 	.endp
 
-.macro inc16 addr
-	inc :addr
-	bne skip_carry
-	inc :addr + 1
-skip_carry
-	.endm
+
 
 ; .macro blit_tile
 ; 	pha
@@ -346,14 +316,7 @@ loop
 	sta (:screen_addr),y
 	.endm
 
-.macro adbw src val
-	lda :src
-	add :val
-	sta :src
-	bcc skip_carry
-	inc :src + 1
-skip_carry
-	.endm
+
 
 .macro blit_map_tile_line map_addr screen_addr count
 	ldy #0
@@ -705,6 +668,7 @@ loop
 ; .endp
 
 	icl 'hardware.asm'
+	icl 'util.asm'
 	icl 'dlist.asm'
 	icl 'pmgdata.asm'
 	icl 'map.asm'
