@@ -20,6 +20,7 @@ map     			= $3000 ; Map
 pmg     			= $4000 ; Player Missle Data
 charset_dungeon_a 	= $5000 ; Main character set
 charset_outdoor_a 	= $6000 ; Character Set for outdoors
+status_line			= $6400 ; Status Line
 monsters_a          = $7000 ; Monster characters
 screen  			= $8000 ; Screen buffer
 
@@ -39,11 +40,17 @@ left_tile	= $9c
 right_tile	= $9d
 on_tile		= $9e
 
+tmp_addr1	= $a0
+tmp_addr2   = $a2
+
 screen_char_width = 40
 screen_width = 19
 screen_height = 11
 map_width = 49
 map_height = 49
+
+playfield_width = 11
+playfield_height = 11
 
 ; Colors
 white = $0a
@@ -63,6 +70,7 @@ gold = $18
 	clear_pmg()
 	load_pmg()
 	setup_pmg()
+	update_player_tiles()
 
 game
 	read_joystick()
@@ -90,42 +98,38 @@ game
 
 move_up
 	lda up_tile
-	cmp #1
-	beq done
+	cmp #55
+	bcc done
+	dec player_y
 	delay #5
-	lda player_y
-	sub #1
-	sta player_y
+	update_player_tiles()
 	jmp done
 
 move_down
 	lda down_tile
-	cmp #1
-	beq done
+	cmp #55
+	bcc done
+	inc player_y
 	delay #5
-	lda player_y
-	add #1
-	sta player_y
+	update_player_tiles()
 	jmp done
 
 move_left
 	lda left_tile
-	cmp #1
-	beq done
+	cmp #55
+	bcc done
+	dec player_x
 	delay #5
-	lda player_x
-	sub #1
-	sta player_x
+	update_player_tiles()
 	jmp done
 
 move_right
 	lda right_tile
-	cmp #1
-	beq done
+	cmp #55
+	bcc done
+	inc player_x
 	delay #5
-	lda player_x
-	add #1
-	sta player_x
+	update_player_tiles()
 	jmp done
 
 done
@@ -206,10 +210,10 @@ pmg_p3 = pmg + $380
 
 	ldx #0
 loop
-	mva pmgdata,x pmg_p0+64,x
-	mva pmgdata+8,x pmg_p1+64,x
-	mva pmgdata+16,x pmg_p2+64,x
-	mva pmgdata+24,x pmg_p3+64,x
+	mva pmgdata,x pmg_p0+60,x
+	mva pmgdata+8,x pmg_p1+60,x
+	mva pmgdata+16,x pmg_p2+60,x
+	mva pmgdata+24,x pmg_p3+60,x
 	inx
 	cpx #8
 	bne loop
@@ -225,7 +229,7 @@ loop
 	mva #46 SDMCTL ; Single Line resolution
 	mva #3 GRACTL  ; Enable PMG
 	mva #1 GRPRIOR ; Give players priority
-	lda #120
+	lda #92
 	sta HPOSP0
 	sta HPOSP1
 	sta HPOSP2
@@ -237,7 +241,7 @@ loop
 	lda (map_ptr),y			; Load the tile from the map
 	asl						; Multiply by two to get left character
 	sta (screen_ptr),y		; Store the left character
-	inc screen_ptr			; Advance the screen pointer
+	inc16 screen_ptr		; Advance the screen pointer
 	add #1					; Add one to get right character
 	sta (screen_ptr),y		; Store the right character
 	adw map_ptr #1			; Advance the map pointer
@@ -245,6 +249,9 @@ loop
 	.endm
 
 .macro blit_circle_line body, map_space, screen_space
+	mwa map_ptr tmp_addr1
+	mwa screen_ptr tmp_addr2
+	
 	adw map_ptr #:map_space
 	adw screen_ptr #:screen_space
 	ldx #:body
@@ -253,10 +260,8 @@ loop
 	dex
 	bne loop
 
-	adw map_ptr #:map_space
-	adw map_ptr #(map_width - screen_width)
-	adw screen_ptr #:screen_space
-	adw screen_ptr #(screen_char_width - screen_width * 2)
+	mwa tmp_addr1 map_ptr
+	mwa tmp_addr2 screen_ptr
 	.endm
 
 .proc map_offset
@@ -265,8 +270,7 @@ loop
 
 	; Shift vertically for player's y position
 	lda player_y
-	sub #(screen_height / 2)
-	sub #1
+	sub #(playfield_height / 2)
 	tay
 loop
 	adw map_ptr #map_width
@@ -275,7 +279,7 @@ loop
 
 	; Shift horizontally for player's x position
 	lda player_x
-	sub #(screen_width / 2)
+	sub #(playfield_width / 2)
 	sta tmp
 	lda #0
 	sta tmp + 1
@@ -284,50 +288,96 @@ loop
 	rts
 	.endp
 
+.proc update_player_tiles
+	mwa #map map_ptr
+
+	ldy player_y
+loop
+	adw map_ptr #map_width
+	dey
+	bne loop
+
+	adbw map_ptr player_x
+
+	; Get the tile the player is on
+	ldy #0
+	lda (map_ptr),y
+	sta on_tile
+
+	; Get the tile to the left of the player
+	dec16 map_ptr
+	lda (map_ptr),y
+	sta left_tile
+
+	; Get the tile to the right of the player
+	inc16 map_ptr
+	inc16 map_ptr
+	lda (map_ptr),y
+	sta right_tile
+
+	; Get the tile above the player
+	dec16 map_ptr
+	sbw map_ptr #map_width
+	lda (map_ptr),y
+	sta up_tile
+
+	; Get the tile below the player
+	adw map_ptr #(map_width * 2)
+	lda (map_ptr),y
+	sta down_tile
+
+	rts
+	.endp
+
 .proc blit_screen
 	map_offset()
 
 	ldy #0
+	; Line #1
+	adw screen_ptr #screen_char_width
+	adw map_ptr #map_width
+	blit_circle_line 5, 3, 7
 
-	; 2 Blank lines
-	adw screen_ptr #(screen_char_width * 2)
-	adw map_ptr #(map_width * 2)
-	
-	; Top 3 lines of the circle
-	blit_circle_line 5, 7, 14
-	blit_circle_line 7, 6, 12
-	blit_circle_line 9, 5, 10
+	; Line #2
+	adw screen_ptr #screen_char_width
+	adw map_ptr #map_width
+	blit_circle_line 7, 2, 5
 
-	; Line above the player
-	adw map_ptr #9				; Advance to the tile above the player
-	lda (map_ptr),y				; Load in the tile
-	sta up_tile					; Store the tile
-	sbw map_ptr #9				; Undo math
-	blit_circle_line 9, 5, 10
+	; Line #3
+	adw screen_ptr #screen_char_width
+	adw map_ptr #map_width
+	blit_circle_line 9, 1, 3
 
-	adw map_ptr #8				; Advance to the tile to the left of the player
-	lda (map_ptr),y				; Load in the tile
-	sta left_tile				; Store the tile
-	adw map_ptr #1				; Advance to the tile that the player is on
-	lda (map_ptr),y				; Load in the tile
-	sta on_tile					; Store the tile
-	adw map_ptr #1				; Advance to the tile to the right of the player
-	lda (map_ptr),y				; Load in the tile
-	sta right_tile				; Store the tile
-	sbw map_ptr #10				; Undo math
-	blit_circle_line 9, 5, 10
+	; Line #4
+	adw screen_ptr #screen_char_width
+	adw map_ptr #map_width
+	blit_circle_line 9, 1, 3
 
-	; Line below the player
-	adw map_ptr #9				; Advance to the tile below the player
-	lda (map_ptr),y				; Load in the tile
-	sta down_tile				; Store the tile
-	sbw map_ptr #9				; Undo math
-	blit_circle_line 9, 5, 10
-	
-	; Bottom 3 lines of the circle
-	blit_circle_line 9, 5, 10
-	blit_circle_line 7, 6, 12
-	blit_circle_line 5, 7, 14
+	; Line #5
+	adw screen_ptr #screen_char_width
+	adw map_ptr #map_width
+	blit_circle_line 9, 1, 3
+
+	; Line #6
+	adw screen_ptr #screen_char_width
+	adw map_ptr #map_width
+	blit_circle_line 9, 1, 3
+
+	; Line #7
+	adw screen_ptr #screen_char_width
+	adw map_ptr #map_width
+	blit_circle_line 9, 1, 3
+
+	; Line #8
+	adw screen_ptr #screen_char_width
+	adw map_ptr #map_width
+	blit_circle_line 7, 2, 5
+
+	; Line #9
+	adw screen_ptr #screen_char_width
+	adw map_ptr #map_width
+	blit_circle_line 5, 3, 7
+
 	rts
 .endp
 
@@ -338,3 +388,4 @@ loop
 	icl 'charset_dungeon_a.asm'
 	icl 'charset_outdoor_a.asm'
 	icl 'monsters_a.asm'
+	icl 'macros.asm'
