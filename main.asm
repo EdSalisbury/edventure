@@ -52,6 +52,11 @@ map_height = 49
 playfield_width = 11
 playfield_height = 11
 
+game_timer = $a4
+game_tick = 10
+
+status_ptr = $a5
+
 ; Colors
 white = $0a
 red = $22
@@ -66,16 +71,32 @@ gold = $18
 
 	setup_screen()
 	setup_colors()
-	mva #>charset_dungeon_a CHBAS
+	mva #>charset_outdoor_a CHBAS
 	clear_pmg()
 	load_pmg()
 	setup_pmg()
 	update_player_tiles()
+	display_borders()
+
+
+	reset_timer
 
 game
+	lda RTCLK2
+	cmp game_timer
+	bne game
+
 	read_joystick()
-	blit_screen()
+	reset_timer
+
 	jmp game
+
+.macro reset_timer
+	lda RTCLK2
+	add #game_tick
+	sta game_timer
+	.endm
+
 
 .proc read_joystick
 	lda STICK0
@@ -101,7 +122,6 @@ move_up
 	cmp #55
 	bcc done
 	dec player_y
-	delay #5
 	update_player_tiles()
 	jmp done
 
@@ -110,7 +130,6 @@ move_down
 	cmp #55
 	bcc done
 	inc player_y
-	delay #5
 	update_player_tiles()
 	jmp done
 
@@ -119,7 +138,6 @@ move_left
 	cmp #55
 	bcc done
 	dec player_x
-	delay #5
 	update_player_tiles()
 	jmp done
 
@@ -128,7 +146,6 @@ move_right
 	cmp #55
 	bcc done
 	inc player_x
-	delay #5
 	update_player_tiles()
 	jmp done
 
@@ -158,8 +175,6 @@ wait
 * Sets up colors                          *
 * --------------------------------------- *
 .proc setup_colors
-
-
 	; Character Set Colors
 	mva #white COLOR0 	; %01
 	mva #red COLOR1  	; %10
@@ -329,6 +344,52 @@ loop
 	rts
 	.endp
 
+.macro blit_char char addr pos
+	lda :char
+	ldy :pos
+	sta (:addr),y
+	.endm
+
+.macro blit_char_row char addr start end
+	lda :char
+	ldy :start
+loop
+	sta (:addr),y
+	iny
+	cpy :end
+	bcc loop
+	.endm
+
+.proc display_borders
+	mwa #status_line status_ptr
+	mwa #screen screen_ptr
+
+	blit_char #UI_NW_BORDER status_ptr #0
+	blit_char_row #UI_HORIZ_BORDER status_ptr #1 #23
+	blit_char #UI_TOP_TEE status_ptr #23
+	blit_char_row #UI_HORIZ_BORDER status_ptr #24 #39
+	blit_char #UI_NE_BORDER status_ptr #39
+	
+	ldx #playfield_height
+loop
+	blit_char #UI_VERT_BORDER screen_ptr #0
+	blit_char #UI_VERT_BORDER screen_ptr #23
+	blit_char #UI_VERT_BORDER screen_ptr #39
+	adw screen_ptr #screen_char_width
+	dex
+	bne loop
+
+	blit_char #UI_SW_BORDER screen_ptr #0
+	blit_char_row #UI_HORIZ_BORDER screen_ptr #1 #23
+	blit_char #UI_BOTTOM_TEE screen_ptr #23
+	blit_char_row #UI_HORIZ_BORDER screen_ptr #24 #39
+	blit_char #UI_SE_BORDER screen_ptr #39
+	
+	rts
+	.endp
+
+
+
 .proc blit_screen
 	map_offset()
 
@@ -389,3 +450,4 @@ loop
 	icl 'charset_outdoor_a.asm'
 	icl 'monsters_a.asm'
 	icl 'macros.asm'
+	icl 'labels.asm'

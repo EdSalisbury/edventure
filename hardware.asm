@@ -1,5 +1,6 @@
 SDLSTL = $0230  ; Display list starting address
-CHBAS  = $02f4  ; CHaracter BAse Register
+CHBAS  = $02f4  ; CHaracter BAse Register (Shadow)
+CHBASE = $d409  ; CHaracter BAse Register
 COLOR0 = $02c4	; Color for %01
 COLOR1 = $02c5  ; Color for %10
 COLOR2 = $02c6  ; Color for %11 (normal)
@@ -23,3 +24,7 @@ RTCLOK = $0012  ; Real-time clock
 RTCLK0 = $0012  ; Real-time clock (most significant byte)
 RTCLK1 = $0013  ; Real-time clock (middle significant byte)
 RTCLK2 = $0014  ; Real-time clock (least significant byte)
+
+NMIEN  = $d40e
+VDSLST = $0200
+WSYNC  = $d40a
