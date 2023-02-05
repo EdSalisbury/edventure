@@ -59,11 +59,11 @@ status_ptr = $a5
 
 ; Colors
 white = $0a
-red = $22
+red = $32
 black = $00
 peach = $2c
 blue = $92
-gold = $18
+gold = $2a
 
 	lda #16
 	sta player_x
@@ -77,8 +77,7 @@ gold = $18
 	setup_pmg()
 	update_player_tiles()
 	display_borders()
-
-
+	update_ui()
 	reset_timer
 
 game
@@ -388,6 +387,147 @@ loop
 	rts
 	.endp
 
+.proc update_ui
+	mwa #screen screen_ptr
+	; HP Bar
+	blit_char #UI_HP_ICON_LEFT screen_ptr #25
+	blit_char #UI_HP_ICON_RIGHT screen_ptr #26
+	blit_char #UI_COLON screen_ptr #27
+	blit_char #UI_BAR_LEFT screen_ptr #28
+	blit_char #UI_HP_FULL screen_ptr #29
+	blit_char #UI_HP_FULL screen_ptr #30
+	blit_char #UI_HP_FULL screen_ptr #31
+	blit_char #UI_HP_FULL screen_ptr #32
+	blit_char #UI_HP_FULL screen_ptr #33
+	blit_char #UI_HP_3_QTR screen_ptr #34
+	blit_char #UI_BAR_RIGHT screen_ptr #35
+
+	adw screen_ptr #screen_char_width
+
+	; Skills
+	blit_char #UI_MELEE_ICON_LEFT screen_ptr #25
+	blit_char #UI_MELEE_ICON_RIGHT screen_ptr #26
+	blit_char #UI_COLON screen_ptr #27
+	blit_char #UI_NUMBER_0 screen_ptr #28
+	blit_char #UI_NUMBER_0 screen_ptr #29
+	blit_char #UI_NUMBER_0 screen_ptr #30
+
+	blit_char #UI_RANGED_ICON_LEFT screen_ptr #32
+	blit_char #UI_RANGED_ICON_RIGHT screen_ptr #33
+	blit_char #UI_COLON screen_ptr #34
+	blit_char #UI_NUMBER_0 screen_ptr #35
+	blit_char #UI_NUMBER_0 screen_ptr #36
+	blit_char #UI_NUMBER_0 screen_ptr #37
+
+	adw screen_ptr #screen_char_width
+
+	blit_char #UI_DEFENSE_ICON_LEFT screen_ptr #25
+	blit_char #UI_DEFENSE_ICON_RIGHT screen_ptr #26
+	blit_char #UI_COLON screen_ptr #27
+	blit_char #UI_NUMBER_0 screen_ptr #28
+	blit_char #UI_NUMBER_0 screen_ptr #29
+	blit_char #UI_NUMBER_0 screen_ptr #30
+
+	blit_char #UI_FORTITUDE_ICON_LEFT screen_ptr #32
+	blit_char #UI_FORTITUDE_ICON_RIGHT screen_ptr #33
+	blit_char #UI_COLON screen_ptr #34
+	blit_char #UI_NUMBER_0 screen_ptr #35
+	blit_char #UI_NUMBER_0 screen_ptr #36
+	blit_char #UI_NUMBER_0 screen_ptr #37
+
+	adw screen_ptr #screen_char_width
+
+	; XP Bar
+	blit_char #UI_XP_ICON_LEFT screen_ptr #25
+	blit_char #UI_XP_ICON_RIGHT screen_ptr #26
+	blit_char #UI_COLON screen_ptr #27
+	blit_char #UI_BAR_LEFT screen_ptr #28
+	blit_char #UI_XP_FULL screen_ptr #29
+	blit_char #UI_XP_FULL screen_ptr #30
+	blit_char #UI_XP_FULL screen_ptr #31
+	blit_char #UI_XP_FULL screen_ptr #32
+	blit_char #UI_XP_FULL screen_ptr #33
+	blit_char #UI_XP_FULL screen_ptr #34
+	blit_char #UI_XP_HALF screen_ptr #35
+	blit_char #UI_BAR_EMPTY screen_ptr #36
+	blit_char #UI_BAR_EMPTY screen_ptr #37
+	blit_char #UI_BAR_RIGHT screen_ptr #38
+
+	adw screen_ptr #screen_char_width
+
+	; Inventory
+	blit_char #UI_TORCH_ICON_LEFT screen_ptr #25
+	blit_char #UI_TORCH_ICON_RIGHT screen_ptr #26
+	blit_char #UI_COLON screen_ptr #27
+	blit_char #UI_NUMBER_0 screen_ptr #28
+	blit_char #UI_NUMBER_0 screen_ptr #29
+	blit_char #UI_NUMBER_0 screen_ptr #30
+
+	blit_char #UI_POTION_ICON_LEFT screen_ptr #32
+	blit_char #UI_POTION_ICON_RIGHT screen_ptr #33
+	blit_char #UI_COLON screen_ptr #34
+	blit_char #UI_NUMBER_0 screen_ptr #35
+	blit_char #UI_NUMBER_0 screen_ptr #36
+	blit_char #UI_NUMBER_0 screen_ptr #37
+
+	adw screen_ptr #screen_char_width
+	blit_char #UI_COIN_ICON_LEFT screen_ptr #25
+	blit_char #UI_COIN_ICON_RIGHT screen_ptr #26
+	blit_char #UI_COLON screen_ptr #27
+	blit_char #UI_NUMBER_0 screen_ptr #28
+	blit_char #UI_NUMBER_0 screen_ptr #29
+	blit_char #UI_NUMBER_0 screen_ptr #30
+	blit_char #UI_NUMBER_0 screen_ptr #31
+	blit_char #UI_NUMBER_0 screen_ptr #32
+
+	; Amulet
+	adw screen_ptr #screen_char_width
+	adw screen_ptr #screen_char_width
+	blit_char #UI_AMULET_NW_ICON_LEFT screen_ptr #29
+	blit_char #UI_AMULET_NW_ICON_RIGHT screen_ptr #30
+	blit_char #UI_BLACK_GEM_ICON_LEFT screen_ptr #31
+	blit_char #UI_BLACK_GEM_ICON_RIGHT screen_ptr #32
+	blit_char #UI_AMULET_NE_ICON_LEFT screen_ptr #33
+	blit_char #UI_AMULET_NE_ICON_RIGHT screen_ptr #34
+
+	adw screen_ptr #screen_char_width
+	blit_char #UI_BLUE_GEM_ICON_LEFT screen_ptr #29
+	blit_char #UI_BLUE_GEM_ICON_RIGHT screen_ptr #30
+	blit_char #UI_WHITE_GEM_ICON_LEFT screen_ptr #31
+	blit_char #UI_WHITE_GEM_ICON_RIGHT screen_ptr #32
+	blit_char #UI_RED_GEM_ICON_LEFT screen_ptr #33
+	blit_char #UI_RED_GEM_ICON_RIGHT screen_ptr #34
+
+	adw screen_ptr #screen_char_width
+	blit_char #UI_AMULET_SW_ICON_LEFT screen_ptr #29
+	blit_char #UI_AMULET_SW_ICON_RIGHT screen_ptr #30
+	blit_char #UI_GOLD_GEM_ICON_LEFT screen_ptr #31
+	blit_char #UI_GOLD_GEM_ICON_RIGHT screen_ptr #32
+	blit_char #UI_AMULET_SE_ICON_LEFT screen_ptr #33
+	blit_char #UI_AMULET_SE_ICON_RIGHT screen_ptr #34
+
+	; Keys
+	sbw screen_ptr #(screen_char_width * 2)
+	blit_char #UI_BLUE_KEY_ICON screen_ptr #26
+	blit_char #UI_KEY_ICON_RIGHT screen_ptr #27
+
+	blit_char #UI_BLACK_KEY_CAP_LEFT screen_ptr #35
+	blit_char #UI_BLACK_KEY_ICON_LEFT screen_ptr #36
+	blit_char #UI_BLACK_KEY_ICON_RIGHT screen_ptr #37
+	blit_char #UI_BLACK_KEY_CAP_RIGHT screen_ptr #38
+
+	adw screen_ptr #screen_char_width
+	blit_char #UI_RED_KEY_ICON screen_ptr #26
+	blit_char #UI_KEY_ICON_RIGHT screen_ptr #27
+	blit_char #UI_WHITE_KEY_ICON screen_ptr #36
+	blit_char #UI_KEY_ICON_RIGHT screen_ptr #37
+
+	adw screen_ptr #screen_char_width
+	blit_char #UI_GOLD_KEY_ICON screen_ptr #26
+	blit_char #UI_KEY_ICON_RIGHT screen_ptr #27
+
+	rts
+	.endp
 
 
 .proc blit_screen
@@ -440,8 +580,11 @@ loop
 	blit_circle_line 5, 3, 7
 
 	rts
-.endp
+	.endp
 
+
+	icl 'macros.asm'
+	icl 'labels.asm'
 	icl 'hardware.asm'
 	icl 'dlist.asm'
 	icl 'pmgdata.asm'
@@ -449,5 +592,4 @@ loop
 	icl 'charset_dungeon_a.asm'
 	icl 'charset_outdoor_a.asm'
 	icl 'monsters_a.asm'
-	icl 'macros.asm'
-	icl 'labels.asm'
+

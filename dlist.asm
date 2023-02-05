@@ -25,7 +25,7 @@ dlist
 	.byte antic5, antic5, antic5, antic5, antic5
 	.byte antic5, antic5, antic5, antic5, antic5 + NMIEN_DLI, antic4
 	.byte jvb, <dlist, >dlist
-	.endp
+	
 
 dli1
 	pha
@@ -45,3 +45,5 @@ dli2
 	mwa #dli1 VDSLST
 	pla
 	rti
+
+	.endp
