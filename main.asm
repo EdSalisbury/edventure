@@ -17,12 +17,13 @@
 	org $2000
 
 map     			= $3000 ; Map
-pmg     			= $4000 ; Player Missle Data
-charset_dungeon_a 	= $5000 ; Main character set
-charset_outdoor_a 	= $6000 ; Character Set for outdoors
-status_line			= $6400 ; Status Line
-monsters_a          = $7000 ; Monster characters
-screen  			= $8000 ; Screen buffer
+pmg     			= $7000 ; Player Missle Data
+charset_dungeon_a 	= $7400 ; Main character set
+rooms				= $7800 ; Rooms
+charset_outdoor_a 	= $7c00 ; Character Set for outdoors
+monsters_a          = $8000 ; Monster characters
+screen  			= $9000 ; Screen buffer
+status_line			= $a000 ; Status Line
 
 stick_up    = %0001
 stick_down  = %0010 
@@ -56,7 +57,7 @@ game_timer = $a4
 game_tick = 10
 
 status_ptr = $a5
-
+room_ptr = $a7
 ; Colors
 white = $0a
 red = $32
@@ -69,16 +70,22 @@ gold = $2a
 	sta player_x
 	sta player_y
 
+	new_map()
+	nop
+	nop
+	; TODO: Turn off antic
 	setup_screen()
 	setup_colors()
 	mva #>charset_outdoor_a CHBAS
 	clear_pmg()
 	load_pmg()
 	setup_pmg()
-	update_player_tiles()
 	display_borders()
 	update_ui()
+	
+	update_player_tiles()
 	reset_timer
+	;blit_screen()
 
 game
 	lda RTCLK2
@@ -588,8 +595,8 @@ loop
 	icl 'hardware.asm'
 	icl 'dlist.asm'
 	icl 'pmgdata.asm'
-	icl 'map.asm'
+	icl 'map_gen.asm'
 	icl 'charset_dungeon_a.asm'
 	icl 'charset_outdoor_a.asm'
 	icl 'monsters_a.asm'
-
+	icl 'rooms.asm'
