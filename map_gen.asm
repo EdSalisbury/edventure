@@ -177,7 +177,42 @@ done:
     rts
     .endp
 
+; Based off of Brad Smith's LFSR algorithm here: https://github.com/bbbradsmith/prng_6502
+.proc random_bs
+    ldy #8
+    lda seed
+top
+    asl
+    rol seed+1
+    bcc next
+    eor #$39
+next:
+    dey
+    bne top
+    sta seed
+    rts
+    .endp
 
+; https://forums.atariage.com/topic/159268-random-numbers/#comment-1958751
+.proc random16
+    lda rand
+    lsr
+    rol rand + 1
+    bcc no_eor
+    eor #$b4
+no_eor:
+    sta rand
+    eor rand + 1
+    rts
+    .endp
 
-
+.proc random8
+    lda rand
+    lsr
+    bcc no_eor
+    eor #$b4
+no_eor:
+    sta rand
+    rts
+    .endp
 

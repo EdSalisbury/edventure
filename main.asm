@@ -60,6 +60,10 @@ game_tick = 10
 
 status_ptr = $a5
 room_ptr = $a7
+
+rand = $a9
+seed = $a9
+
 ; Colors
 white = $0a
 red = $32
@@ -91,12 +95,17 @@ room_height = 15
 	
 	update_player_tiles()
 	reset_timer
-	;blit_screen()
+
+	mwa #1975 rand
 
 game
 	lda RTCLK2
 	cmp game_timer
 	bne game
+
+	; random8()
+	; sta tmp
+	; blit_char tmp status_ptr #0
 
 	read_joystick()
 	reset_timer
@@ -108,7 +117,6 @@ game
 	add #game_tick
 	sta game_timer
 	.endm
-
 
 .proc read_joystick
 	lda STICK0
@@ -595,6 +603,7 @@ loop
 	rts
 	.endp
 
+.proc 
 
 	icl 'macros.asm'
 	icl 'labels.asm'
