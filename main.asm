@@ -19,9 +19,10 @@
 map     			= $3000 ; Map
 pmg     			= $7000 ; Player Missle Data
 charset_dungeon_a 	= $7400 ; Main character set
-room_doors			= $7800 ; 64 bytes
-room_positions		= $7900 ; 128 bytes
-rooms				= $7a00 ; Rooms
+room_doors			= $7800 ; 64 bytes ROM
+room_positions		= $7900 ; 128 bytes ROM
+rooms				= $7a00 ; Rooms ROM
+char_buffer 		= $7b00 ; 38 bytes RAM
 charset_outdoor_a 	= $7c00 ; Character Set for outdoors
 monsters_a          = $8000 ; Monster characters
 screen  			= $9000 ; Screen buffer
@@ -92,7 +93,15 @@ room_height = 15
 	setup_pmg()
 	display_borders()
 	update_ui()
-	
+
+	ldx #0
+loop
+	lda hello,x
+	sta char_buffer,x
+	inx
+	bne loop
+
+	print_status()
 	update_player_tiles()
 	reset_timer
 
@@ -603,7 +612,87 @@ loop
 	rts
 	.endp
 
-.proc 
+.proc clear_status
+	mwa #char_buffer tmp_addr1
+	ldy #0
+	lda #0
+loop
+	sta (tmp_addr1),y
+	iny
+	cpy #38 ; Char buffer length
+	bne loop
+	rts
+	.endp
+
+.proc print_status
+	mwa #status_line status_ptr
+	mwa #char_buffer tmp_addr1
+
+	inc status_ptr
+	ldy #0
+loop
+	lda (tmp_addr1),y
+
+	cmp #1
+	beq bang
+
+	cmp #31
+	beq question
+
+	cmp #12
+	beq comma
+
+	cmp #14
+	beq period
+
+	cmp #26
+	beq colon
+
+	cmp #33
+	bcs letters
+
+	cmp #16
+	bcs numbers
+
+	jmp print
+
+comma
+	add #6
+	jmp print
+
+period
+	add #5
+	jmp print
+
+colon
+	add #31
+	jmp print
+
+letters
+	add #53
+	jmp print
+
+bang
+	add #16
+	jmp print
+
+question
+	sub #15
+	jmp print
+
+numbers
+	add #28
+	jmp print
+
+print
+	sta (status_ptr),y
+	iny
+	cpy #38
+	bne loop
+	
+	rts
+
+	.endp
 
 	icl 'macros.asm'
 	icl 'labels.asm'
@@ -616,3 +705,8 @@ loop
 	icl 'monsters_a.asm'
 	icl 'rooms.asm'
 	icl 'doors.asm'
+
+.local hello
+	.byte "GIANT BAT BITES YOU FOR 2 HP!"
+	.endl
+
