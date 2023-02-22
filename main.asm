@@ -19,8 +19,9 @@
 map     			= $3000 ; Map
 pmg     			= $7000 ; Player Missle Data
 charset_dungeon_a 	= $7400 ; Main character set
-room_doors			= $7800
-rooms				= $7900 ; Rooms
+room_doors			= $7800 ; 64 bytes
+room_positions		= $7900 ; 128 bytes
+rooms				= $7a00 ; Rooms
 charset_outdoor_a 	= $7c00 ; Character Set for outdoors
 monsters_a          = $8000 ; Monster characters
 screen  			= $9000 ; Screen buffer
@@ -66,6 +67,10 @@ black = $00
 peach = $2c
 blue = $92
 gold = $2a
+
+border = 9
+room_width = 15
+room_height = 15
 
 	lda #16
 	sta player_x

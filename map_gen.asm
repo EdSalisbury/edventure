@@ -26,16 +26,44 @@
         .endp
 
 .proc place_room
-room_width = 15
-room_height = 15
-room_number = 0
-map_pos = 0
-    mwa #map map_ptr
-    adw map_ptr #(map_width * 9)  ; Add 9 rows
-    adw map_ptr #9                ; Add 9 columns
 
+room_number = 0
+room_pos = 1
+
+room_y = tmp
+room_x = tmp + 1
+room_pos_ptr = tmp_addr1
+
+    
+    ; Get the correct position of the room coordinates (multiply by 2)
+    lda #room_pos
+    asl
+    tax
+
+    ; Get room position
+    lda room_positions,x
+    sta room_y
+    inx
+    lda room_positions,x
+    sta room_x
+
+    ; Move the map_ptr to the correct position (y)
+    mwa #map map_ptr
+    ldy #0
+y_loop:
+    adw map_ptr #map_width
+    iny
+    cpy room_y
+    bne y_loop
+
+    ; Move the map_ptr to the correct position (x)
+    adw map_ptr room_x
+
+    ; Make a copy of the map pointer for later
+    mwa map_ptr room_pos_ptr
+
+    ; Move the room pointer to the correct location
     mwa #rooms room_ptr
-    ; Advance for whichever room it is
 
     ldx #0
     ldy #0
@@ -53,8 +81,8 @@ loop:
     cpx #room_height        ; Check to see if the lines have all been copied
     bne loop                ; If not, keep looping
 
-   ; adw room_ptr #room_width
 
+    mwa room_pos_ptr map_ptr
     ; Remove doors that are on the edge
 
 DOOR_NORTH = %1000
@@ -93,34 +121,56 @@ check_east:
     jmp done
 
 place_north_door:
-    mwa #map map_ptr
-    adw map_ptr #(map_width * 8)
-    adw map_ptr #(9 + room_width / 2)                
+    mwa room_pos_ptr map_ptr
+    sbw map_ptr #map_width
+    adw map_ptr #(room_width / 2)
     lda #MAP_DOOR
+    ldy #0
     sta (map_ptr),y
     jmp check_south
 
 place_south_door:
-    mwa #map map_ptr
-    adw map_ptr #(map_width * (9 + room_height))
-    adw map_ptr #(9 + room_width / 2)                
+    mwa room_pos_ptr map_ptr
+    ldy #0
+loop_s:
+    adw map_ptr #map_width
+    iny
+    cpy #room_height
+    bne loop_s
+
+    adw map_ptr #(room_width / 2)
     lda #MAP_DOOR
+    ldy #0
     sta (map_ptr),y
     jmp check_west
 
 place_west_door:
-    mwa #map map_ptr
-    adw map_ptr #(map_width * (9 + room_height / 2)) 
-    adw map_ptr #8                
+    mwa room_pos_ptr map_ptr
+    ldy #0
+loop_w:
+    adw map_ptr #map_width
+    iny
+    cpy #(room_height / 2)
+    bne loop_w
+
     lda #MAP_DOOR
+    ldy #0
     sta (map_ptr),y
     jmp check_east
 
 place_east_door:
-    mwa #map map_ptr
-    adw map_ptr #(map_width * (9 + room_height / 2)) 
-    adw map_ptr #(9 + room_width)               
+    mwa room_pos_ptr map_ptr
+    ldy #0
+loop_e:
+    adw map_ptr #map_width
+    iny
+    cpy #(room_height / 2)
+    bne loop_e
+
+    adw map_ptr #room_width
+                 
     lda #MAP_DOOR
+    ldy #0
     sta (map_ptr),y
 
 done:
