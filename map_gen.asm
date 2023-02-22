@@ -53,28 +53,42 @@ loop:
     cpx #room_height        ; Check to see if the lines have all been copied
     bne loop                ; If not, keep looping
 
-    adw room_ptr #room_width
-    ; Place possible doors
+   ; adw room_ptr #room_width
+
+    ; Remove doors that are on the edge
+
+DOOR_NORTH = %1000
+DOOR_SOUTH = %0100
+DOOR_WEST  = %0010
+DOOR_EAST  = %0001
+doors = tmp
     ldy #0
+    lda (room_ptr),y        ; Load in doors for this room
+    ldx #0                  ; Room number
+    and room_doors,x        ; AND with possible doors for this room
+    sta doors
+
+    ldy #0
+   ; Place possible doors
 check_north:
-    lda (room_ptr),y
-    and %0001
-    beq place_north_door
+    lda doors
+    and #DOOR_NORTH
+    bne place_north_door
     
 check_south:
-    lda (room_ptr),y
-    and %0010
-    beq place_south_door
+    lda doors
+    and #DOOR_SOUTH
+    bne place_south_door
     
 check_west:
-    lda (room_ptr),y
-    and %0100
-    beq place_west_door
+    lda doors
+    and #DOOR_WEST
+    bne place_west_door
     
 check_east:
-    lda (room_ptr),y
-    and %1000
-    beq place_east_door
+    lda doors
+    and #DOOR_EAST
+    bne place_east_door
  
     jmp done
 
@@ -112,8 +126,6 @@ place_east_door:
 done:
     rts
     .endp
-
-
 
 
 

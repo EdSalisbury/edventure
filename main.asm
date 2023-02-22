@@ -19,7 +19,8 @@
 map     			= $3000 ; Map
 pmg     			= $7000 ; Player Missle Data
 charset_dungeon_a 	= $7400 ; Main character set
-rooms				= $7800 ; Rooms
+room_doors			= $7800
+rooms				= $7900 ; Rooms
 charset_outdoor_a 	= $7c00 ; Character Set for outdoors
 monsters_a          = $8000 ; Monster characters
 screen  			= $9000 ; Screen buffer
@@ -600,3 +601,4 @@ loop
 	icl 'charset_outdoor_a.asm'
 	icl 'monsters_a.asm'
 	icl 'rooms.asm'
+	icl 'doors.asm'
