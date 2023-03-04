@@ -1,6 +1,8 @@
 MAP_WALL                = 1
 MAP_FLOOR               = 125
 MAP_DOOR                = 4 + 128
+MAP_DOWN                = 119
+MAP_UP                  = 120
 
 UI_VERT_BORDER          = 1
 UI_HORIZ_BORDER         = 4

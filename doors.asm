@@ -1,8 +1,8 @@
     ; Bitmap for possible doors:
-    ; 1000 - North
-    ; 0100 - South
-    ; 0010 - West
-    ; 0001 - East
+DOOR_NORTH = %1000
+DOOR_SOUTH = %0100
+DOOR_WEST  = %0010
+DOOR_EAST  = %0001
 
     ; Lookup tables for each room in a map, layout is as follows:
     ;  0  1  2  3  4  5  6  7

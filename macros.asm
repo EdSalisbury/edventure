@@ -21,3 +21,13 @@ skip_borrow
     inc :src + 1
 skip_carry
     .endm
+
+.macro advance_ptr orig ptr width count
+    mwa :orig :ptr
+    ldy #0
+loop
+    adw :ptr :width
+    iny
+    cpy :count
+    bne loop
+    .endm

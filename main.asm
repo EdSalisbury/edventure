@@ -21,7 +21,7 @@ pmg     			= $7000 ; Player Missle Data
 charset_dungeon_a 	= $7400 ; Main character set
 room_doors			= $7800 ; 64 bytes ROM
 room_positions		= $7900 ; 128 bytes ROM
-rooms				= $7a00 ; Rooms ROM
+rooms				= $b000 ; Rooms ROM
 char_buffer 		= $7b00 ; 38 bytes RAM
 charset_outdoor_a 	= $7c00 ; Character Set for outdoors
 monsters_a          = $8000 ; Monster characters
@@ -62,8 +62,15 @@ game_tick = 10
 status_ptr = $a5
 room_ptr = $a7
 
-rand = $a9
-seed = $a9
+rand = $aa
+room_num = $ab
+room_pos = $ac
+room_x = $ad
+room_y = $ae
+room_pos_ptr = $af ; 16-bit
+
+doors = $b1
+tmp_ptr = $b2 ; 16-bit
 
 ; Colors
 white = $0a
@@ -81,6 +88,8 @@ room_height = 15
 	sta player_x
 	sta player_y
 
+	mva #123 rand ; Seed the random number generator (will use RANDOM in the future)
+
 	new_map()
 	nop
 	nop
@@ -93,28 +102,13 @@ room_height = 15
 	setup_pmg()
 	display_borders()
 	update_ui()
-
-	ldx #0
-loop
-	lda hello,x
-	sta char_buffer,x
-	inx
-	bne loop
-
-	print_status()
 	update_player_tiles()
 	reset_timer
-
-	mwa #1975 rand
 
 game
 	lda RTCLK2
 	cmp game_timer
 	bne game
-
-	; random8()
-	; sta tmp
-	; blit_char tmp status_ptr #0
 
 	read_joystick()
 	reset_timer
@@ -612,87 +606,21 @@ loop
 	rts
 	.endp
 
-.proc clear_status
-	mwa #char_buffer tmp_addr1
-	ldy #0
-	lda #0
-loop
-	sta (tmp_addr1),y
-	iny
-	cpy #38 ; Char buffer length
-	bne loop
-	rts
-	.endp
+; Uses a linear-feedback shift register (LFSR) to generate 8-bit pseudo-random numbers
+; More info: https://en.wikipedia.org/wiki/Linear-feedback_shift_register
+; Also here: https://forums.atariage.com/topic/159268-random-numbers/#comment-1958751
+; Also here: https://github.com/bbbradsmith/prng_6502
 
-.proc print_status
-	mwa #status_line status_ptr
-	mwa #char_buffer tmp_addr1
+.proc random
+    lda rand		; Load in seed (either from initial or previous run)
+    lsr				; Shift accumulator 1 bit to the right
+    bcc no_eor		; Carry flag contains last bit prior to shifting, if it's 0, skip XOR
+    eor #$b4		; XOR with feedback value that produces a good sequence
+no_eor
+    sta rand		; Store the random number
+    rts				; Return
+    .endp
 
-	inc status_ptr
-	ldy #0
-loop
-	lda (tmp_addr1),y
-
-	cmp #1
-	beq bang
-
-	cmp #31
-	beq question
-
-	cmp #12
-	beq comma
-
-	cmp #14
-	beq period
-
-	cmp #26
-	beq colon
-
-	cmp #33
-	bcs letters
-
-	cmp #16
-	bcs numbers
-
-	jmp print
-
-comma
-	add #6
-	jmp print
-
-period
-	add #5
-	jmp print
-
-colon
-	add #31
-	jmp print
-
-letters
-	add #53
-	jmp print
-
-bang
-	add #16
-	jmp print
-
-question
-	sub #15
-	jmp print
-
-numbers
-	add #28
-	jmp print
-
-print
-	sta (status_ptr),y
-	iny
-	cpy #38
-	bne loop
-	
-	rts
-
-	.endp
 
 	icl 'macros.asm'
 	icl 'labels.asm'
@@ -705,8 +633,3 @@ print
 	icl 'monsters_a.asm'
 	icl 'rooms.asm'
 	icl 'doors.asm'
-
-.local hello
-	.byte "GIANT BAT BITES YOU FOR 2 HP!"
-	.endl
-
