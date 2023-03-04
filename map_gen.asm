@@ -28,16 +28,21 @@
 .proc place_room
 
 room_number = 0
-room_pos = 1
-
+room_pos = tmp2
 room_y = tmp
 room_x = tmp + 1
 room_pos_ptr = tmp_addr1
 
-    
+
+    random8()
+    and #64       ; Strip off the last 2 bits because we need a number between 0-63
+    sta room_pos
+
+    ; Why?
     ; Get the correct position of the room coordinates (multiply by 2)
-    lda #room_pos
-    asl
+    ; lda #room_pos
+    ; asl
+    ; tax
     tax
 
     ; Get room position

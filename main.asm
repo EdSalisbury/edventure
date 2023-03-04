@@ -65,6 +65,8 @@ room_ptr = $a7
 rand = $a9
 seed = $a9
 
+tmp2 = $aa
+
 ; Colors
 white = $0a
 red = $32
@@ -81,6 +83,8 @@ room_height = 15
 	sta player_x
 	sta player_y
 
+	mwa #1975 rand
+
 	new_map()
 	nop
 	nop
@@ -94,18 +98,18 @@ room_height = 15
 	display_borders()
 	update_ui()
 
-	ldx #0
-loop
-	lda hello,x
-	sta char_buffer,x
-	inx
-	bne loop
+; 	ldx #0
+; loop
+; 	lda hello,x
+; 	sta char_buffer,x
+; 	inx
+; 	bne loop
 
-	print_status()
+	;print_status()
 	update_player_tiles()
 	reset_timer
 
-	mwa #1975 rand
+	
 
 game
 	lda RTCLK2
