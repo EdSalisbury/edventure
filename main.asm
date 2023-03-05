@@ -14,19 +14,32 @@
 ; PAL Color Palette: https://atariage.com/forums/uploads/monthly_10_2015/post-6369-0-90255700-1443889950.png
 ; PMG Memory Map: https://www.atarimagazines.com/compute/issue64/atari_animation.gif
 
-	org $2000
+; RAM: $2000-7FFF - 24K
+; 16K Cartridge ROM: $8000-BFFF - 16K
+; Maximum Usable RAM and ROM: 2000-BFFF = 40K
+	org $b000
 
-map     			= $3000 ; Map
-pmg     			= $7000 ; Player Missle Data
-charset_dungeon_a 	= $7400 ; Main character set
-room_doors			= $7800 ; 64 bytes ROM
-room_positions		= $7900 ; 128 bytes ROM
-rooms				= $b000 ; Rooms ROM
-char_buffer 		= $7b00 ; 38 bytes RAM
-charset_outdoor_a 	= $7c00 ; Character Set for outdoors
-monsters_a          = $8000 ; Monster characters
-screen  			= $9000 ; Screen buffer
-status_line			= $a000 ; Status Line
+; RAM $2000-7FFF
+map					= $2000 ; 16K
+screen				= $7000 ; 480 bytes
+status_line			= $71E0 ; 40 bytes
+tmp_room			= $7208 ; 225 bytes
+; 279 bytes free
+pmg					= $7400 ; 1K
+
+; ROM $8000-8FFF
+charset_dungeon_a 	= $8000 ; 1K
+charset_dungeon_b 	= $8400 ; 1K
+charset_outdoor_a 	= $8800 ; 1K
+charset_outdoor_b 	= $8c00 ; 1K
+; ROM $9000-9FFF
+monsters_a			= $9000 ; 1K
+monsters_b			= $9400 ; 1K
+; 512 bytes free
+; ROM $A000-AFFF
+rooms				= $a000 ; 3600 Bytes
+room_positions		= $ae10 ; 32 Bytes
+; ROM $B000-BFFF (Code)
 
 stick_up    = %0001
 stick_down  = %0010 
@@ -50,8 +63,8 @@ tmp_addr2   = $a2
 screen_char_width = 40
 screen_width = 19
 screen_height = 11
-map_width = 49
-map_height = 49
+map_width = 128
+map_height = 128
 
 playfield_width = 11
 playfield_height = 11
@@ -90,30 +103,29 @@ room_height = 15
 
 	mva #123 rand ; Seed the random number generator (will use RANDOM in the future)
 
-	new_map()
-	nop
-	nop
-	; TODO: Turn off antic
-	setup_screen()
-	setup_colors()
-	mva #>charset_outdoor_a CHBAS
 	clear_pmg()
 	load_pmg()
 	setup_pmg()
-	display_borders()
-	update_ui()
-	update_player_tiles()
-	reset_timer
+ 	setup_colors()
+ 	mva #>charset_outdoor_a CHBAS
+ 	display_borders()
+ 	update_ui()
+	new_map()
+	setup_screen()
+
+ 	update_player_tiles()
+ 	reset_timer
 
 game
-	lda RTCLK2
-	cmp game_timer
-	bne game
+ 	lda RTCLK2
+ 	cmp game_timer
+ 	bne game
 
-	read_joystick()
-	reset_timer
+ 	read_joystick()
+	blit_screen()
+ 	reset_timer
 
-	jmp game
+ 	jmp game
 
 .macro reset_timer
 	lda RTCLK2
@@ -256,6 +268,9 @@ loop
 	cpx #8
 	bne loop
 	rts
+
+	icl 'pmgdata.asm'
+
 	.endp
 
 * --------------------------------------- *
@@ -621,15 +636,12 @@ no_eor
     rts				; Return
     .endp
 
-
 	icl 'macros.asm'
 	icl 'labels.asm'
 	icl 'hardware.asm'
 	icl 'dlist.asm'
-	icl 'pmgdata.asm'
 	icl 'map_gen.asm'
 	icl 'charset_dungeon_a.asm'
 	icl 'charset_outdoor_a.asm'
 	icl 'monsters_a.asm'
 	icl 'rooms.asm'
-	icl 'doors.asm'

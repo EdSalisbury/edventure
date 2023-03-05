@@ -26,7 +26,7 @@ skip_carry
     mwa :orig :ptr
     ldy #0
 loop
-    adw :ptr :width
+    adbw :ptr :width
     iny
     cpy :count
     bne loop
