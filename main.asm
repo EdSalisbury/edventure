@@ -20,11 +20,12 @@
 	org $b000
 
 ; RAM $2000-7FFF
-map					= $2000 ; 16K
+map					= $2000 ; 16,641 bytes
+; NOTE: Temporarily using more than 16k due to borders
 screen				= $7000 ; 480 bytes
 status_line			= $71E0 ; 40 bytes
 tmp_room			= $7208 ; 225 bytes
-; 279 bytes free
+
 pmg					= $7400 ; 1K
 
 ; ROM $8000-8FFF
@@ -63,8 +64,7 @@ tmp_addr2   = $a2
 screen_char_width = 40
 screen_width = 19
 screen_height = 11
-map_width = 128
-map_height = 128
+
 
 playfield_width = 11
 playfield_height = 11
@@ -95,11 +95,13 @@ peach = $2c
 blue = $92
 gold = $2a
 
-border = 9
+border = 6
+map_width = 127 + border * 2
+map_height = 127 + border * 2
 room_width = 15
 room_height = 15
 
-	mva #123 rand ; Seed the random number generator (will use RANDOM in the future)
+	mva #3 rand ; Seed the random number generator (will use RANDOM in the future)
 
 	clear_pmg()
 	load_pmg()

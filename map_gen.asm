@@ -15,8 +15,6 @@ no_advance
     copy_room()
 
     choose_room_pos()
-    ;mva #0 room_pos
-        
     place_up_tile()
     place_room()
     ;remove_edge_doors()
