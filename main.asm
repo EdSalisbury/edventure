@@ -101,7 +101,8 @@ map_height = 127 + border * 2
 room_width = 15
 room_height = 15
 
-	mva #3 rand ; Seed the random number generator (will use RANDOM in the future)
+	;mva #3 rand ; Seed the random number generator (will use RANDOM in the future)
+	mva RANDOM rand
 
 	clear_pmg()
 	load_pmg()
@@ -626,7 +627,7 @@ loop
 ; Also here: https://forums.atariage.com/topic/159268-random-numbers/#comment-1958751
 ; Also here: https://github.com/bbbradsmith/prng_6502
 
-.proc random
+.proc random8
     lda rand		; Load in seed (either from initial or previous run)
     lsr				; Shift accumulator 1 bit to the right
     bcc no_eor		; Carry flag contains last bit prior to shifting, if it's 0, skip XOR

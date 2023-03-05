@@ -47,7 +47,7 @@ loop
 
 ; Choose room to place
 .proc choose_room_num
-    random()        ; Choose a random 8-bit number
+    random8()        ; Choose a random 8-bit number
     lda rand        ; Load it in to the accumulator
     cmp #$10        ; See if the value is 16 or above
     bcc done        ; Value is 0-15, so we're done
@@ -63,7 +63,7 @@ done
 
 ; Choose where to place the room
 .proc choose_room_pos
-    random()        ; Choose a random 8-bit number
+    random8()        ; Choose a random 8-bit number
     lda rand        ; Load it in to the accumulator
     cmp #$40        ; See if the value is below 64
     bcc done        ; It's less than 64, so we can place it
@@ -91,7 +91,7 @@ loop
 .proc place_up_tile
 loop
     mwa #tmp_room tmp_ptr
-    random()                        ; Get random number
+    random8()                        ; Get random number
     cmp #(room_width * room_height) ; Verifies that the number is within the boundaries
     bcs loop                        ; It's too big, try again
     adbw tmp_ptr rand              ; Add to the room pointer
@@ -139,17 +139,17 @@ loop
     ; If it's an up tile, set the player_x and player_y positions
     cmp #MAP_UP
     bne next
-    mva room_x player_x
-    mva room_y player_y
+    mva tmp1 player_x
+    mva tmp2 player_y
 next
-    inc room_x
+    inc tmp1
     iny                         ; Move one tile to the right
     cpy #room_width             ; Check to see if the line is complete
     bne loop                    ; If not, keep looping
 
     ldy #0                      ; If the line is complete, reset horiz index
-    inc room_y
-    mva tmp1 room_x
+    inc tmp2
+    mva room_x tmp1
     adbw map_ptr #map_width      ; Advance the map pointer one full line
     adbw tmp_ptr #room_width    ; Advance the room pointer one full line
     inx                         ; Advance the vertical line index
