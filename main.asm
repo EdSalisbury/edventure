@@ -101,9 +101,7 @@ map_height = 127 + border * 2
 room_width = 15
 room_height = 15
 
-	;mva #3 rand ; Seed the random number generator (will use RANDOM in the future)
-	mva RANDOM rand
-
+	seed_rng()
 	clear_pmg()
 	load_pmg()
 	setup_pmg()
@@ -636,6 +634,17 @@ no_eor
     sta rand		; Store the random number
     rts				; Return
     .endp
+
+; Seed the random number generator, taking care that the value is not 0
+; NOTE: This needs to be done after a non-deterministic amount of time
+;   This can easily be accomplished by accepting user input from the title screen
+.proc seed_rng
+pick
+	lda RANDOM
+	bne pick
+	sta rand
+	rts
+	.endp
 
 	icl 'macros.asm'
 	icl 'labels.asm'
