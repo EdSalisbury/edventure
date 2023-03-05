@@ -14,8 +14,8 @@
 no_advance
     copy_room()
 
-    ;choose_room_pos()
-    mva #0 room_pos
+    choose_room_pos()
+    ;mva #0 room_pos
         
     place_up_tile()
     place_room()
@@ -125,6 +125,9 @@ loop
     lda room_positions,x
     sta room_x
     
+    mva room_x tmp1
+    mva room_y tmp2
+
     advance_ptr #map map_ptr #map_width room_y    ; Move the map_ptr to the correct position (y)
     adbw map_ptr room_x                          ; Move the map_ptr to the correct x position
     ;mwa map_ptr tmp_ptr                         ; Make a copy of the map pointer so that it doesn't need to be calculated again
@@ -134,18 +137,21 @@ loop
 loop
     lda (tmp_ptr),y            ; Load the tile at room pointer
     sta (map_ptr),y             ; Store tile at current map ptr
-
+    
     ; If it's an up tile, set the player_x and player_y positions
-    ; cmp #MAP_UP
-    ; bne next
-    ; mva room_x player_x
-    ; mva room_y player_y
+    cmp #MAP_UP
+    bne next
+    mva room_x player_x
+    mva room_y player_y
 next
+    inc room_x
     iny                         ; Move one tile to the right
     cpy #room_width             ; Check to see if the line is complete
     bne loop                    ; If not, keep looping
 
     ldy #0                      ; If the line is complete, reset horiz index
+    inc room_y
+    mva tmp1 room_x
     adbw map_ptr #map_width      ; Advance the map pointer one full line
     adbw tmp_ptr #room_width    ; Advance the room pointer one full line
     inx                         ; Advance the vertical line index

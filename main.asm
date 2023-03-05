@@ -84,6 +84,8 @@ room_pos_ptr = $af ; 16-bit
 
 doors = $b1
 tmp_ptr = $b2 ; 16-bit
+tmp1 = $b4
+tmp2 = $b5
 
 ; Colors
 white = $0a
@@ -96,10 +98,6 @@ gold = $2a
 border = 9
 room_width = 15
 room_height = 15
-
-	lda #16
-	sta player_x
-	sta player_y
 
 	mva #123 rand ; Seed the random number generator (will use RANDOM in the future)
 
