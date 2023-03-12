@@ -14,15 +14,33 @@
 ; PAL Color Palette: https://atariage.com/forums/uploads/monthly_10_2015/post-6369-0-90255700-1443889950.png
 ; PMG Memory Map: https://www.atarimagazines.com/compute/issue64/atari_animation.gif
 
-	org $2000
+	org $b000
 
-map     			= $3000 ; Map
-pmg     			= $4000 ; Player Missle Data
-charset_dungeon_a 	= $5000 ; Main character set
-charset_outdoor_a 	= $6000 ; Character Set for outdoors
-status_line			= $6400 ; Status Line
-monsters_a          = $7000 ; Monster characters
-screen  			= $8000 ; Screen buffer
+; RAM: $2000-7FFF - 24K
+map     			= $2000 ; Map (16K+)
+screen  			= $7000 ; Screen buffer (480 bytes)
+status_line			= $71e0 ; Status Line (40 bytes)
+tmp_room			= $7208 ; Temp room (225 bytes)
+; free
+pmg     			= $7400 ; Player Missle Data (1K)
+; free
+
+; 16K Cartridge ROM: $8000-BFFF - 16K
+; 8000-8FFF
+charset_dungeon_a 	= $8000 ; Main character set (1K)
+charset_dungeon_b 	= $8400 ; Main character set (1K)
+charset_outdoor_a 	= $8800 ; Character Set for outdoors (1K)
+charset_outdoor_b 	= $8c00 ; Character Set for outdoors (1K)
+
+; 9000-9FFF
+monsters_a          = $9000 ; Monster characters (1K)
+monsters_b          = $9400 ; Monster characters (1K)
+; free
+rooms				= $a000 ; 3600 Bytes
+room_positions		= $ae10	; 128 bytes
+; free
+
+; B000-BFFF (Code)
 
 stick_up    = %0001
 stick_down  = %0010 
@@ -46,8 +64,11 @@ tmp_addr2   = $a2
 screen_char_width = 40
 screen_width = 19
 screen_height = 11
-map_width = 49
-map_height = 49
+border				= 6
+room_width			= 15
+room_height			= 15
+map_width 			= room_width * 8 + 7 + border * 2
+map_height 			= room_height * 8 + 7 + border * 2
 
 playfield_width = 11
 playfield_height = 11
@@ -56,6 +77,15 @@ game_timer = $a4
 game_tick = 10
 
 status_ptr = $a5
+
+rand				= $a7
+room_num			= $a8
+room_pos			= $a9
+room_x				= $aa
+room_y				= $ab
+room_ptr			= $ac ; 16 bit
+tmp_x				= $ae
+tmp_y				= $af
 
 ; Colors
 white = $0a
@@ -69,12 +99,16 @@ gold = $2a
 	sta player_x
 	sta player_y
 
-	setup_screen()
+	mva #123 rand
+
 	setup_colors()
 	mva #>charset_outdoor_a CHBAS
 	clear_pmg()
 	load_pmg()
 	setup_pmg()
+
+	new_map()
+	setup_screen()
 	update_player_tiles()
 	display_borders()
 	update_ui()
@@ -87,6 +121,7 @@ game
 
 	read_joystick()
 	reset_timer
+	blit_screen()
 
 	jmp game
 
@@ -582,14 +617,33 @@ loop
 	rts
 	.endp
 
+; Uses a linear-feedback shift register (LFSR) to generate 8-bit pseudo-random numbers
+; More info: https://en.wikipedia.org/wiki/Linear-feedback_shift_register
+; Also here: https://forums.atariage.com/topic/159268-random-numbers/#comment-1958751
+; Also here: https://github.com/bbbradsmith/prng_6502
+.proc random8
+	lda rand				; Load in seed or last number generated
+	lsr						; Shift 1 place to the right
+	bcc no_eor				; Carry flag contains the last bit prior to shifting - if 0, skip XOR
+	eor #$b4				; XOR with feedback value that produces a good sequence
+no_eor
+	sta rand				; Store the random number
+	rts
+	.endp
 
 	icl 'macros.asm'
 	icl 'labels.asm'
 	icl 'hardware.asm'
 	icl 'dlist.asm'
 	icl 'pmgdata.asm'
-	icl 'map.asm'
+	icl 'map_gen.asm'
+
 	icl 'charset_dungeon_a.asm'
 	icl 'charset_outdoor_a.asm'
 	icl 'monsters_a.asm'
+	icl 'rooms.asm'
+	icl 'room_positions.asm'
+	
 
+	
+	

@@ -21,3 +21,19 @@ skip_borrow
     inc :src + 1
 skip_carry
     .endm
+
+.macro advance_ptr data ptr width count offset
+    mwa :data :ptr
+    lda :count  ; Check to make sure it's not 0
+    beq done    ; If it is, we're done
+
+    ldy #0
+loop
+    adbw :ptr :width
+    iny
+    cpy :count
+    bne loop
+
+done
+    adbw :ptr :offset
+    .endm

@@ -1,3 +1,8 @@
+MAP_WALL                = 1
+MAP_FLOOR               = 127
+MAP_UP                  = 120
+MAP_DOWN                = 119
+
 UI_VERT_BORDER          = 1
 UI_HORIZ_BORDER         = 4
 UI_TOP_TEE              = 10
