@@ -28,3 +28,4 @@ RTCLK2 = $0014  ; Real-time clock (least significant byte)
 NMIEN  = $d40e
 VDSLST = $0200
 WSYNC  = $d40a
+RANDOM = $d20a

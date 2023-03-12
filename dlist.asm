@@ -32,7 +32,7 @@ dli1
 	lda #1
 	sta WSYNC
 	mva #>charset_dungeon_a CHBASE
-	blit_screen()
+	;blit_screen()
 	mwa #dli2 VDSLST
 	pla
 	rti
