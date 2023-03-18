@@ -1,7 +1,16 @@
 .proc new_map
     fill_map()
-    choose_room_num()
-    choose_room_pos()
+
+    ; Get room number between 0-15
+    random8()
+    and #15
+    sta room_num
+
+    ; Get room position between 0-63
+    random8()
+    and #63
+    sta room_pos
+
     copy_room()
     place_up_tile()
     place_room()
@@ -28,33 +37,6 @@ loop
     cpx #map_height         ; Check to see if all of the lines have been copied
     bne loop                ; Nope, keep looping
 
-    rts
-    .endp
-
-.proc choose_room_num
-    random8()               ; Get random number between 0-255
-    lda rand                ; Load in the random number
-    cmp #16                 ; Check to see if value is below 16
-    bcc done                ; Value is 0-15, we're done
-    lsr                     ; Otherwise shift right 4 times
-    lsr
-    lsr
-    lsr
-   
-done
-    sta room_num
-    rts
-    .endp
-
-.proc choose_room_pos
-    random8()               ; Get random number between 0-255
-    lda rand                ; Load in random number
-    cmp #64                 ; Check to see if value is below 64
-    bcc done                ; It is between 0-63, we're done
-    lsr                     ; Nope, shift right twice
-    lsr
-done
-    sta room_pos
     rts
     .endp
 
