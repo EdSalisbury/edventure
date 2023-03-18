@@ -180,7 +180,7 @@ done
     .endp
 
 .proc place_north_door
-    advance_ptr #map map_ptr #map_Width room_y room_x
+    advance_ptr #map map_ptr #map_width room_y room_x
     sbw map_ptr #map_width
     adw map_ptr #(room_width / 2)
     lda #MAP_DOOR
