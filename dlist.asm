@@ -2,6 +2,8 @@
 * Proc: setup_screen                      *
 * Sets up the display list for the screen *
 * --------------------------------------- *
+	org dlist
+
 .proc setup_screen
 blank8 = $70    ; 8 blank lines
 lms = $40	    ; Load Memory Scan

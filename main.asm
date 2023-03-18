@@ -21,6 +21,8 @@ map     			= $2000 ; Map (16K+)
 screen  			= $7000 ; Screen buffer (480 bytes)
 status_line			= $71e0 ; Status Line (40 bytes)
 tmp_room			= $7208 ; Temp room (225 bytes)
+room_doors			= $72e9 ; Room doors (64 bytes)
+
 ; free
 pmg     			= $7400 ; Player Missle Data (1K)
 ; free
@@ -36,8 +38,12 @@ charset_outdoor_b 	= $8c00 ; Character Set for outdoors (1K)
 monsters_a          = $9000 ; Monster characters (1K)
 monsters_b          = $9400 ; Monster characters (1K)
 ; free
-rooms				= $a000 ; 3600 Bytes
+dlist				= $9800
+room_types			= $a000 ; 3600 Bytes
 room_positions		= $ae10	; 128 bytes
+room_pos_doors		= $ae90 ; 64 bytes
+room_type_doors		= $aed0 ; 16 bytes
+
 ; free
 
 ; B000-BFFF (Code)
@@ -79,7 +85,7 @@ game_tick = 10
 status_ptr = $a5
 
 rand				= $a7
-room_num			= $a8
+room_type			= $a8
 room_pos			= $a9
 room_x				= $aa
 room_y				= $ab
@@ -632,8 +638,8 @@ no_eor
 	.endp
 
 	icl 'macros.asm'
-	icl 'labels.asm'
 	icl 'hardware.asm'
+	icl 'labels.asm'
 	icl 'dlist.asm'
 	icl 'pmgdata.asm'
 	icl 'map_gen.asm'
@@ -641,9 +647,7 @@ no_eor
 	icl 'charset_dungeon_a.asm'
 	icl 'charset_outdoor_a.asm'
 	icl 'monsters_a.asm'
-	icl 'rooms.asm'
+	icl 'room_types.asm'
 	icl 'room_positions.asm'
-	
-
-	
-	
+	icl 'room_pos_doors'
+	icl 'room_type_doors'

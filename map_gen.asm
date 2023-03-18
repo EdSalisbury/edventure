@@ -4,7 +4,7 @@
     ; Get room number between 0-15
     random8()
     and #15
-    sta room_num
+    sta room_type
 
     ; Get room position between 0-63
     random8()
@@ -14,6 +14,8 @@
     copy_room()
     place_up_tile()
     place_room()
+    get_doors()
+    place_doors()
 
     rts
     .endp
@@ -41,7 +43,7 @@ loop
     .endp
 
 .proc copy_room
-    advance_ptr #rooms room_ptr #(room_width * room_height) room_num #0
+    advance_ptr #room_types room_ptr #(room_width * room_height) room_type #0
 
     mwa #tmp_room tmp_addr1
 
@@ -121,3 +123,115 @@ next
     rts
     .endp
 
+.proc get_doors
+    ; Get possible doors for the room position
+    ldy room_pos
+    mwa #room_pos_doors tmp_addr1
+    mwa #room_doors tmp_addr2
+    lda (tmp_addr1),y
+    sta (tmp_addr2),y
+
+    ; Get doors for the room type
+    ldy room_type                   ; Set up Y for getting room type
+    mwa #room_type_doors tmp_addr1  ; Set up pointer for indirect addressing
+    lda (tmp_addr1),y               ; Load room type into accumulator
+    sta tmp                         ; Store room type into temp var
+
+    ldy room_pos                    ; Set up Y for getting room pos
+    lda (tmp_addr2),y               ; Load in room doors for this position
+    and tmp                         ; AND with room type
+    sta (tmp_addr2),y               ; Store back into room_doors
+
+    rts
+    .endp
+
+.proc place_doors
+    ldy room_pos                    ; Load room position into Y
+    mwa #room_doors tmp_addr1       ; Set up pointer
+    lda (tmp_addr1),y               ; Get room doors for position
+    sta tmp                         ; Store rooms into tmp
+
+check_north
+    lda tmp
+    and #DOOR_NORTH
+    beq check_south
+    place_north_door()
+
+check_south
+    lda tmp
+    and #DOOR_SOUTH
+    beq check_west
+    place_south_door()
+
+check_west
+    lda tmp
+    and #DOOR_WEST
+    beq check_east
+    place_west_door()
+
+check_east
+    lda tmp
+    and #DOOR_EAST
+    beq done
+    place_east_door()
+    
+done
+    rts
+    .endp
+
+.proc place_north_door
+    advance_ptr #map map_ptr #map_Width room_y room_x
+    sbw map_ptr #map_width
+    adw map_ptr #(room_width / 2)
+    lda #MAP_DOOR
+    ldy #0
+    sta (map_ptr),y
+    rts
+    .endp
+
+.proc place_south_door
+    advance_ptr #map map_ptr #map_width room_y room_x
+    ldy #0
+loop
+    adw map_ptr #map_width
+    iny
+    cpy #room_height
+    bne loop
+
+    adw map_ptr #(room_width / 2)
+    lda #MAP_DOOR
+    ldy #0
+    sta (map_ptr),y
+    rts
+    .endp
+
+.proc place_west_door
+    advance_ptr #map map_ptr #map_width room_y room_x
+    ldy #0
+loop
+    adw map_ptr #map_width
+    iny
+    cpy #(room_height / 2)
+    bne loop
+
+    lda #MAP_DOOR
+    ldy #0
+    sta (map_ptr),y
+    rts
+    .endp
+
+.proc place_east_door
+    advance_ptr #map map_ptr #map_width room_y room_x
+    adw map_ptr #room_width
+    ldy #0
+loop
+    adw map_ptr #map_width
+    iny
+    cpy #(room_height / 2)
+    bne loop
+
+    lda #MAP_DOOR
+    ldy #0
+    sta (map_ptr),y
+    rts
+    .endp
