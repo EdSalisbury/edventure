@@ -1,20 +1,38 @@
 .proc new_map
     fill_map()
 
+    mva #0 num_rooms
+
+    ; Get starting room position between 0-63
+    random8()
+    and #63
+    sta room_pos
+
+gen
     ; Get room number between 0-15
     random8()
     and #15
     sta room_type
 
-    ; Get room position between 0-63
-    random8()
-    and #63
-    sta room_pos
-
     copy_room()
+
+    lda num_rooms
+    bne place
+    
     place_up_tile()
+
+place
+    inc num_rooms
+    lda num_rooms
+    cmp #5
+    beq done
+    
     place_room()
     get_doors()
+    walk_room()
+    jmp gen
+
+done
     place_doors()
 
     rts
@@ -79,6 +97,7 @@ loop
     .endp
 
 .proc place_room
+    ;##TRACE "Place room #%d" db(room_pos)
     lda room_pos            ; Load in room position
     asl                     ; Multiply by 2 because positions are 2 bytes wide
     tax                     ; Init X register
@@ -103,6 +122,7 @@ loop
 
     cmp #MAP_UP
     bne next
+    ;##TRACE "moving player"
     mva tmp_x player_x
     mva tmp_y player_y
 next
@@ -127,7 +147,7 @@ next
     ; Get possible doors for the room position
     ldy room_pos
     mwa #room_pos_doors tmp_addr1
-    mwa #room_doors tmp_addr2
+    mwa #avail_doors tmp_addr2
     lda (tmp_addr1),y
     sta (tmp_addr2),y
 
@@ -141,41 +161,59 @@ next
     lda (tmp_addr2),y               ; Load in room doors for this position
     and tmp                         ; AND with room type
     sta (tmp_addr2),y               ; Store back into room_doors
+    sta doors
 
     rts
     .endp
 
 .proc place_doors
-    ldy room_pos                    ; Load room position into Y
-    mwa #room_doors tmp_addr1       ; Set up pointer
-    lda (tmp_addr1),y               ; Get room doors for position
-    sta tmp                         ; Store rooms into tmp
+    mva #0 room_pos
+    mwa #placed_doors tmp_addr1     ; Set up pointer
+loop
+    ldy #0
+    lda (tmp_addr1),y
+    sta doors                       ; Store doors into tmp
+    lda room_pos
+    asl                     ; Multiply by 2 because positions are 2 bytes wide
+    tax                     ; Init X register
+
+    lda room_positions,x    ; Load Y coordinate
+    sta room_y              ; Save in room_y
+    inx
+    lda room_positions,x    ; Load X coordinate
+    sta room_x              ; Save in room_x
 
 check_north
-    lda tmp
+    lda doors
     and #DOOR_NORTH
     beq check_south
     place_north_door()
 
 check_south
-    lda tmp
+    lda doors
     and #DOOR_SOUTH
     beq check_west
     place_south_door()
 
 check_west
-    lda tmp
+    lda doors
     and #DOOR_WEST
     beq check_east
     place_west_door()
 
 check_east
-    lda tmp
+    lda doors
     and #DOOR_EAST
     beq done
     place_east_door()
     
 done
+    inw tmp_addr1
+    inc room_pos
+    lda room_pos
+    cmp #64
+    bcc loop
+
     rts
     .endp
 
@@ -207,6 +245,7 @@ loop
 
 .proc place_west_door
     advance_ptr #map map_ptr #map_width room_y room_x
+    sbw map_ptr #1
     ldy #0
 loop
     adw map_ptr #map_width
@@ -233,5 +272,108 @@ loop
     lda #MAP_DOOR
     ldy #0
     sta (map_ptr),y
+    rts
+    .endp
+
+.proc walk_room
+cur_doors = tmp
+placed_doors_ptr = tmp_addr1
+avail_doors_ptr = tmp_addr2
+
+    mwa #placed_doors placed_doors_ptr
+    mwa #avail_doors avail_doors_ptr
+pick
+    random8()
+    and #15
+    ;##TRACE "Rand = %04b" (a)
+    and doors
+    ;##TRACE "Doors = %04b" db(doors)
+    sta cur_doors
+    ;##TRACE "Current doors = %04b" db(tmp)
+
+check_north
+    lda cur_doors
+    ;and #DOOR_NORTH
+    cmp #DOOR_NORTH
+    bne check_south
+    ;##TRACE "Going north"
+    ldy room_pos
+    lda (placed_doors_ptr),y
+    add #DOOR_NORTH
+    sta (placed_doors_ptr),y
+    lda (avail_doors_ptr),y
+    and %0111
+    sta (avail_doors_ptr),y
+    sta doors
+
+    lda room_pos
+    sub #8
+    sta room_pos
+    
+    jmp done
+
+check_south
+    lda cur_doors
+    ;and #DOOR_SOUTH
+    cmp #DOOR_SOUTH
+    bne check_west
+    ;##TRACE "Going south"
+    ldy room_pos
+    lda (placed_doors_ptr),y
+    add #DOOR_SOUTH
+    sta (placed_doors_ptr),y
+    lda (avail_doors_ptr),y
+    and %1011
+    sta (avail_doors_ptr),y
+    sta doors
+
+    lda room_pos
+    add #8
+    sta room_pos
+
+    jmp done
+
+check_west
+    lda cur_doors
+    ;and #DOOR_WEST
+    cmp #DOOR_WEST
+    bne check_east
+    ;##TRACE "Going west"
+
+    ldy room_pos
+    lda (placed_doors_ptr),y
+    add #DOOR_WEST
+    sta (placed_doors_ptr),y
+    lda (avail_doors_ptr),y
+    and %1101
+    sta (avail_doors_ptr),y
+
+    lda room_pos
+    sub #1
+    sta room_pos
+
+    jmp done
+
+check_east
+    lda cur_doors
+    ;and #DOOR_EAST
+    cmp #DOOR_EAST
+    bne pick
+    ;##TRACE "Going east"
+    ldy room_pos
+    lda (placed_doors_ptr),y
+    add #DOOR_EAST
+    sta (placed_doors_ptr),y
+    lda (avail_doors_ptr),y
+    and %1110
+    sta (avail_doors_ptr),y
+
+    lda room_pos
+    add #1
+    sta room_pos
+
+    jmp done
+
+done
     rts
     .endp

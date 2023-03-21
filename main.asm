@@ -21,8 +21,8 @@ map     			= $2000 ; Map (16K+)
 screen  			= $7000 ; Screen buffer (480 bytes)
 status_line			= $71e0 ; Status Line (40 bytes)
 tmp_room			= $7208 ; Temp room (225 bytes)
-room_doors			= $72e9 ; Room doors (64 bytes)
-
+placed_doors		= $72e9 ; Room doors (64 bytes)
+avail_doors			= $7329 ; Available doors (64 bytes)
 ; free
 pmg     			= $7400 ; Player Missle Data (1K)
 ; free
@@ -92,6 +92,8 @@ room_y				= $ab
 room_ptr			= $ac ; 16 bit
 tmp_x				= $ae
 tmp_y				= $af
+doors				= $b0
+num_rooms			= $b1
 
 ; Colors
 white = $0a
