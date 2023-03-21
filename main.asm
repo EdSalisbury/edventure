@@ -23,6 +23,7 @@ status_line			= $71e0 ; Status Line (40 bytes)
 tmp_room			= $7208 ; Temp room (225 bytes)
 placed_doors		= $72e9 ; Room doors (64 bytes)
 avail_doors			= $7329 ; Available doors (64 bytes)
+occupied_rooms		= $7369 ; Stores flags for populated rooms (8 bytes)
 ; free
 pmg     			= $7400 ; Player Missle Data (1K)
 ; free
@@ -75,6 +76,8 @@ room_width			= 15
 room_height			= 15
 map_width 			= room_width * 8 + 7 + border * 2
 map_height 			= room_height * 8 + 7 + border * 2
+map_room_columns	= 8
+map_room_rows		= 8
 
 playfield_width = 11
 playfield_height = 11
@@ -94,6 +97,13 @@ tmp_x				= $ae
 tmp_y				= $af
 doors				= $b0
 num_rooms			= $b1
+placed_doors_ptr	= $b2
+avail_doors_ptr		= $b4
+cur_doors			= $b6
+pow2_ptr			= $b8
+occupied_rooms_ptr  = $ba
+room_col			= $bc
+room_row			= $bd
 
 ; Colors
 white = $0a
@@ -107,6 +117,8 @@ gold = $2a
 	sta player_x
 	sta player_y
 
+	mwa #powers_of_two pow2_ptr
+	mwa #occupied_rooms occupied_rooms_ptr
 	mva #123 rand
 
 	setup_colors()
@@ -653,3 +665,7 @@ no_eor
 	icl 'room_positions.asm'
 	icl 'room_pos_doors'
 	icl 'room_type_doors'
+
+	; Lookup tables
+powers_of_two
+	.byte 1,2,4,8,16,32,64,128
