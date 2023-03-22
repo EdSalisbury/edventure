@@ -22,6 +22,16 @@ skip_borrow
 skip_carry
     .endm
 
+.macro sbbw src val
+    lda :src
+    sub :val
+    sta :src
+    bcc skip_borrow
+    dec :src
+skip_borrow
+    dec :src + 1
+    .endm
+
 .macro advance_ptr data ptr width count offset
     mwa :data :ptr
     lda :count  ; Check to make sure it's not 0

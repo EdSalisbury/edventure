@@ -24,11 +24,11 @@ gen
 place
     inc num_rooms
     lda num_rooms
-    cmp #10
+    cmp #5
     beq done
     
     place_room()
-    ;##TRACE "Number of rooms = %d" db(num_rooms)
+    ;## TRACE "Number of rooms = %d" db(num_rooms)
     lda num_rooms
     cmp #1
     bne next
@@ -105,6 +105,7 @@ loop
     ;##TRACE "Place room #%d" db(room_pos)
     lda room_pos            ; Load in room position
     set_room_occupied room_pos
+    lda room_pos
     asl                     ; Multiply by 2 because positions are 2 bytes wide
     tax                     ; Init X register
 
@@ -171,16 +172,19 @@ next
     sta (tmp_addr2),y               ; Store back into room_doors
     sta doors
 
-    ; ##TRACE "Doors for room #%d = %04b" db(room_pos) db(doors)
+    //; ##TRACE "Doors for room #%d = %04b" db(room_pos) db(doors)
     rts
     .endp
 
 .proc place_doors
+    ;##TRACE "Placing doors"
     mva #0 room_pos
     mwa #placed_doors tmp_addr1     ; Set up pointer
 loop
     ldy #0
     lda (tmp_addr1),y
+    beq done
+    ;##TRACE "doors for room %d = %04b" db(room_pos) (a)
     sta doors                       ; Store doors into tmp
     lda room_pos
     asl                     ; Multiply by 2 because positions are 2 bytes wide
@@ -191,6 +195,7 @@ loop
     inx
     lda room_positions,x    ; Load X coordinate
     sta room_x              ; Save in room_x
+    //;##TRACE "room_x: %d room_y: %d" db(room_x) db(room_y)
 
 check_north
     lda doors
@@ -202,7 +207,8 @@ check_south
     lda doors
     and #DOOR_SOUTH
     beq check_west
-    place_south_door()
+    //;##TRACE "south"
+    place_south_door
 
 check_west
     lda doors
@@ -227,9 +233,10 @@ done
     .endp
 
 .proc place_north_door
+    //;##TRACE "Placing north door for room #%d" db(room_pos)
     advance_ptr #map map_ptr #map_width room_y room_x
-    sbw map_ptr #map_width
-    adw map_ptr #(room_width / 2)
+    sbbw map_ptr #map_width
+    adbw map_ptr #(room_width / 2)
     lda #MAP_DOOR
     ldy #0
     sta (map_ptr),y
@@ -237,15 +244,18 @@ done
     .endp
 
 .proc place_south_door
+    //;##TRACE "Placing south door for room #%d" db(room_pos)
     advance_ptr #map map_ptr #map_width room_y room_x
+    //;##TRACE "pointer advanced"
     ldy #0
 loop
-    adw map_ptr #map_width
+    //;##TRACE "y = %d" (y)
+    adbw map_ptr #map_width
     iny
     cpy #room_height
     bne loop
 
-    adw map_ptr #(room_width / 2)
+    adbw map_ptr #(room_width / 2)
     lda #MAP_DOOR
     ldy #0
     sta (map_ptr),y
@@ -254,10 +264,15 @@ loop
 
 .proc place_west_door
     advance_ptr #map map_ptr #map_width room_y room_x
-    sbw map_ptr #1
+    ;##TRACE "Placing west door for room #%d" db(room_pos)
+    ;##TRACE "map_ptr = %X" dw(map_ptr)
+    dew map_ptr
+    ;;sbbw map_ptr #1
+    ;##TRACE "map_ptr = %X" dw(map_ptr)
     ldy #0
 loop
-    adw map_ptr #map_width
+    adbw map_ptr #map_width
+    ;##TRACE "map_ptr = %X" dw(map_ptr)
     iny
     cpy #(room_height / 2)
     bne loop
@@ -269,11 +284,12 @@ loop
     .endp
 
 .proc place_east_door
+    //;##TRACE "Placing east door for room #%d" db(room_pos)
     advance_ptr #map map_ptr #map_width room_y room_x
-    adw map_ptr #room_width
+    adbw map_ptr #room_width
     ldy #0
 loop
-    adw map_ptr #map_width
+    adbw map_ptr #map_width
     iny
     cpy #(room_height / 2)
     bne loop
@@ -293,15 +309,21 @@ pick
     lda (avail_doors_ptr),y
     sta doors
 
-    ;##TRACE "Current room = %d" db(room_pos)
+    ;## TRACE "Current room = %d" db(room_pos)
     random8()
     and #15
-    ;##TRACE "Rand = %04b" (a)
+    //; ## TRACE "Rand = %04b" (a)
     and doors
-    ;##TRACE "Doors = %04b" db(doors)
+    //; ## TRACE "Doors = %04b" db(doors)
 
 check_north
     cmp #DOOR_NORTH
+    bne check_south
+    lda room_pos
+    sub #8
+    sta tmp
+    get_room_occupied tmp
+
     bne check_south
     ;##TRACE "Going north"
     walk_north room_pos
@@ -310,6 +332,12 @@ check_north
 check_south
     cmp #DOOR_SOUTH
     bne check_west
+    lda room_pos
+    add #8
+    sta tmp
+    get_room_occupied tmp
+
+    bne check_west
     ;##TRACE "Going south"
     walk_south room_pos
     jmp done
@@ -317,12 +345,24 @@ check_south
 check_west
     cmp #DOOR_WEST
     bne check_east
+    lda room_pos
+    sub #1
+    sta tmp
+    get_room_occupied tmp
+
+    bne check_east
     ;##TRACE "Going west"
     walk_west room_pos
     jmp done
 
 check_east
     cmp #DOOR_EAST
+    bne pick
+    lda room_pos
+    add #1
+    sta tmp
+    get_room_occupied tmp
+
     bne pick
     ;##TRACE "Going east"
     walk_east room_pos
@@ -361,7 +401,7 @@ done
     lda (avail_doors_ptr),y
     sub #DOOR_SOUTH
     sta (avail_doors_ptr),y
-    ;##TRACE "New avail doors for room #%d: %04b" db(room_pos) (a)
+    ; ## TRACE "New avail doors for room #%d: %04b" db(room_pos) (a)
 
     rts
     .endp
@@ -394,7 +434,7 @@ done
     lda (avail_doors_ptr),y
     sub #DOOR_NORTH
     sta (avail_doors_ptr),y
-    ;##TRACE "New avail doors for room #%d: %04b" db(room_pos) (a)
+    ; ## TRACE "New avail doors for room #%d: %04b" db(room_pos) (a)
 
     rts
     .endp
@@ -427,7 +467,7 @@ done
     sub #DOOR_EAST
     sta (avail_doors_ptr),y
 
-    ;##TRACE "New avail doors for room #%d: %04b" db(room_pos) (a)
+    ;## TRACE "New avail doors for room #%d: %04b" db(room_pos) (a)
     rts
     .endp
 
@@ -458,16 +498,17 @@ done
     lda (avail_doors_ptr),y
     sub #DOOR_WEST
     sta (avail_doors_ptr),y
-    ;##TRACE "New avail doors for room #%d: %04b" db(room_pos) (a)
+    ; ## TRACE "New avail doors for room #%d: %04b" db(room_pos) (a)
 
     rts
     .endp
 
 .proc get_room_occupied (.byte a) .reg
 bitmap = tmp
-
+    sta room_row
     and #7                      ; Mask the last 3 bits as the column (mod 8)
     sta room_col                ; Store column to a temp variable
+    lda room_row
     lsr                         ; Divide by 8 to get the row
     lsr
     lsr
@@ -493,7 +534,7 @@ bitmap = tmp
     and #7                      ; Mask the last 3 bits as the column (mod 8)
     sta room_col                ; Store column to a temp variable
     lda room_row
-    ;##TRACE "room_col = %d, room_row = %d, bitmap = %08b" db(room_col) db(room_row) db(tmp)
+    ; ## TRACE "room_col = %d, room_row = %d, bitmap = %08b" db(room_col) db(room_row) db(tmp)
     lsr                         ; Divide by 8 to get the row
     lsr
     lsr
@@ -501,17 +542,17 @@ bitmap = tmp
     tay                         ; Copy the room row to Y (index of occupied_rooms)
     lda (occupied_rooms_ptr),y  ; Load in the correct byte for the row
     sta bitmap
-    ;##TRACE "room_col = %d, room_row = %d, bitmap = %08b" db(room_col) db(room_row) db(tmp)
+    ; ## TRACE "room_col = %d, room_row = %d, bitmap = %08b" db(room_col) db(room_row) db(tmp)
     lda room_col                ; Load in the column
     tay                         ; Copy to Y register
     lda (pow2_ptr),y            ; Get the power of 2 for the column
-    ;##TRACE "a = %d" (a)
+    ; ## TRACE "a = %d" (a)
     ora bitmap                  ; OR with bitmap to get the value of the bit position
     sta bitmap                  ; Save it back to the bitmap
     lda room_row                ; Load the room row
     tay                         ; Set Y to the room row index
     lda bitmap                  ; Load the bitmap back into the accumulator
     sta (occupied_rooms_ptr),y  ; Store the bitmap into occupied room for appropriate index
-    ;##TRACE "room_col = %d, room_row = %d, bitmap = %08b" db(room_col) db(room_row) db(tmp)
+    ; ## TRACE "room_col = %d, room_row = %d, bitmap = %08b" db(room_col) db(room_row) db(tmp)
     rts
     .endp
