@@ -104,6 +104,8 @@ pow2_ptr			= $b8
 occupied_rooms_ptr  = $ba
 room_col			= $bc
 room_row			= $bd
+dead_end			= $be
+max_rooms			= $bf
 
 ; Colors
 white = $0a
@@ -113,13 +115,9 @@ peach = $2c
 blue = $92
 gold = $2a
 
-	lda #16
-	sta player_x
-	sta player_y
-
 	mwa #powers_of_two pow2_ptr
 	mwa #occupied_rooms occupied_rooms_ptr
-	mva #123 rand
+	mva #124 rand
 
 	setup_colors()
 	mva #>charset_outdoor_a CHBAS

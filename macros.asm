@@ -26,10 +26,9 @@ skip_carry
     lda :src
     sub :val
     sta :src
-    bcc skip_borrow
-    dec :src
-skip_borrow
+    bcs skip_borrow
     dec :src + 1
+skip_borrow
     .endm
 
 .macro advance_ptr data ptr width count offset
