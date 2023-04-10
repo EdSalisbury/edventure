@@ -1,21 +1,53 @@
-.proc new_map
-    fill_map()
-
-    ; Get room number between 0-15
+.macro get_room_type
     random8()
     and #15
     sta room_type
+    .endm
 
-    ; Get room position between 0-63
+.macro get_room_pos
     random8()
     and #63
     sta room_pos
+    .endm
 
-    copy_room()
-    place_up_tile()
-    place_room()
-    get_doors()
-    place_doors()
+.proc new_map
+    mva #0 num_rooms
+    mva #8 max_rooms
+
+    fill_map
+
+first_room
+    get_room_type
+    get_room_pos
+    copy_room
+    place_special_tile #MAP_UP
+    inc num_rooms
+    jmp place
+
+last_room
+    place_special_tile #MAP_DOWN
+    place_room
+    jmp done
+
+next_room
+    get_room_type
+    copy_room
+    inc num_rooms
+
+check_last
+    lda num_rooms
+    cmp max_rooms
+    beq last_room
+
+place
+    place_room
+    get_doors
+
+    walk_room
+    jmp next_room
+
+done
+    place_doors
 
     rts
     .endp
@@ -58,7 +90,7 @@ loop
     rts
     .endp
 
-.proc place_up_tile
+.proc place_special_tile (.byte x) .reg
 loop
     mwa #tmp_room tmp_addr1
     random8()
@@ -72,14 +104,15 @@ loop
     cmp #MAP_FLOOR
     bne loop
 
-    lda #MAP_UP
+    txa
     sta (tmp_addr1),y
 
     rts
     .endp
 
 .proc place_room
-    lda room_pos            ; Load in room position
+    set_room_occupied room_pos
+    lda room_pos
     asl                     ; Multiply by 2 because positions are 2 bytes wide
     tax                     ; Init X register
 
@@ -127,7 +160,7 @@ next
     ; Get possible doors for the room position
     ldy room_pos
     mwa #room_pos_doors tmp_addr1
-    mwa #room_doors tmp_addr2
+    mwa #avail_doors tmp_addr2
     lda (tmp_addr1),y
     sta (tmp_addr2),y
 
@@ -140,42 +173,61 @@ next
     ldy room_pos                    ; Set up Y for getting room pos
     lda (tmp_addr2),y               ; Load in room doors for this position
     and tmp                         ; AND with room type
-    sta (tmp_addr2),y               ; Store back into room_doors
+    sta (tmp_addr2),y               ; Store back into avail_doors
 
     rts
     .endp
 
 .proc place_doors
-    ldy room_pos                    ; Load room position into Y
-    mwa #room_doors tmp_addr1       ; Set up pointer
-    lda (tmp_addr1),y               ; Get room doors for position
-    sta tmp                         ; Store rooms into tmp
+    mva #0 room_pos
+    mwa #placed_doors tmp_addr1
+
+loop
+    ldy #0                      ; Init Y
+    lda (tmp_addr1),y           ; Load in current placed_door
+    beq done                    ; if 0, we're done
+    sta doors                   ; Store into doors var
+    lda room_pos                ; Load room position
+    asl                         ; Multiply by 2 because positions are 2 bytes wide
+    tax                         ; Init X register
+
+    lda room_positions,x        ; Load Y coordinate
+    sta room_y                  ; Save in room_y
+    inx
+    lda room_positions,x        ; Load X coordinate
+    sta room_x                  ; Save in room_x
 
 check_north
-    lda tmp
+    lda doors
     and #DOOR_NORTH
     beq check_south
     place_north_door()
 
 check_south
-    lda tmp
+    lda doors
     and #DOOR_SOUTH
     beq check_west
     place_south_door()
 
 check_west
-    lda tmp
+    lda doors
     and #DOOR_WEST
     beq check_east
     place_west_door()
 
 check_east
-    lda tmp
+    lda doors
     and #DOOR_EAST
     beq done
     place_east_door()
     
 done
+    inw tmp_addr1
+    inc room_pos
+    lda room_pos
+    cmp #64
+    bcc loop
+
     rts
     .endp
 
@@ -207,6 +259,7 @@ loop
 
 .proc place_west_door
     advance_ptr #map map_ptr #map_width room_y room_x
+    dew map_ptr
     ldy #0
 loop
     adw map_ptr #map_width
@@ -233,5 +286,321 @@ loop
     lda #MAP_DOOR
     ldy #0
     sta (map_ptr),y
+    rts
+    .endp
+
+.proc get_room_occupied (.byte a) .reg
+bitmap = tmp
+    sta room_row
+    and #7                      ; Mask the last 3 bits as the column (mod 8)
+    sta room_col                ; Store column to a temp variable
+    lda room_row
+    lsr                         ; Divide by 8 to get the row
+    lsr
+    lsr
+    sta room_row                ; Store the room row
+    tay                         ; Copy the room row to Y (index of occupied_rooms)
+    lda (occupied_rooms_ptr),y  ; Load in the correct byte for the row
+    sta bitmap                  ; Store bitmap
+
+    lda room_col                ; Load in the column
+    tay                         ; Copy to Y register
+    lda (pow2_ptr),y            ; Get the power of 2 for the column
+    and bitmap                  ; AND with tmp to get the value of the bit position
+    ; A contains the result
+
+    rts
+    .endp
+
+.proc set_room_occupied (.byte a) .reg
+bitmap = tmp
+
+    sta room_row
+    and #7                      ; Mask the last 3 bits as the column (mod 8)
+    sta room_col                ; Store column to a temp variable
+    lda room_row
+    lsr                         ; Divide by 8 to get the row
+    lsr
+    lsr
+    sta room_row                ; Save into row
+    tay                         ; Copy the room row to Y (index of occupied_rooms)
+    lda (occupied_rooms_ptr),y  ; Load in the correct byte for the row
+    sta bitmap
+    lda room_col                ; Load in the column
+    tay                         ; Copy to Y register
+    lda (pow2_ptr),y            ; Get the power of 2 for the column
+    ora bitmap                  ; OR with bitmap to get the value of the bit position
+    sta bitmap                  ; Save it back to the bitmap
+    lda room_row                ; Load the room row
+    tay                         ; Set Y to the room row index
+    lda bitmap                  ; Load the bitmap back into the accumulator
+    sta (occupied_rooms_ptr),y  ; Store the bitmap into occupied room for appropriate index
+    rts
+    .endp
+
+.proc walk_room
+pick
+    mwa #placed_doors placed_doors_ptr
+    mwa #avail_doors avail_doors_ptr
+
+    ldy room_pos
+    lda (avail_doors_ptr),y
+    sta doors
+
+    random8
+    and #15
+    and doors
+    sta doors
+
+check_north
+    check_north_door
+    beq check_south
+    walk_north room_pos
+    jmp done
+
+check_south
+    check_south_door
+    beq check_west
+    walk_south room_pos
+    jmp done
+
+check_west
+    check_west_door
+    beq check_east
+    walk_west room_pos
+    jmp done
+
+check_east
+    check_east_door
+    beq pick
+    walk_east room_pos
+
+done
+    rts
+    .endp
+
+.proc check_north_door
+    lda doors
+    cmp #DOOR_NORTH
+    bne false
+
+    ; Make sure the room isn't occupied
+    lda room_pos
+    sub #8
+    sta tmp
+    get_room_occupied tmp
+    beq true
+
+    ; The room is occupied
+    ldy room_pos
+    lda (avail_doors_ptr),y
+    sub #DOOR_NORTH
+    sta (avail_doors_ptr),y
+    bne false
+true
+    lda #1
+    rts
+
+false
+    lda #0
+    rts
+    .endp
+
+.proc check_south_door
+    lda doors
+    cmp #DOOR_SOUTH
+    bne false
+
+    lda room_pos
+    add #8
+    sta tmp
+    get_room_occupied tmp
+    beq true
+    ldy room_pos
+    lda (avail_doors_ptr),y
+    sub #DOOR_SOUTH
+    sta (avail_doors_ptr),y
+    bne false
+
+true
+    lda #1
+    rts
+false
+    lda #0
+    rts
+    .endp
+
+.proc check_west_door
+    lda doors
+    cmp #DOOR_WEST
+    bne false
+
+    lda room_pos
+    sub #1
+    sta tmp
+    get_room_occupied tmp
+    beq true
+    ldy room_pos
+    lda (avail_doors_ptr),y
+    sub #DOOR_WEST
+    sta (avail_doors_ptr),y
+    bne false
+
+true
+    lda #1
+    rts
+false
+    lda #0
+    rts
+    .endp
+
+.proc check_east_door
+    lda doors
+    cmp #DOOR_EAST
+    bne false
+
+    lda room_pos
+    add #1
+    sta tmp
+    get_room_occupied tmp
+    beq true
+    ldy room_pos
+    lda (avail_doors_ptr),y
+    sub #DOOR_EAST
+    sta (avail_doors_ptr),y
+    bne false
+
+true
+    lda #1
+    rts
+false
+    lda #0
+    rts
+    .endp
+
+; Walk north
+; Input Registers:
+; Y = room position
+; Updates current avail and placed doors
+; Moves room position to new room
+; Updates new available doors to prevent backtracking
+.proc walk_north (.byte y) .reg
+    ; Add door to placed rooms in current room
+    lda (placed_doors_ptr),y
+    add #DOOR_NORTH
+    sta (placed_doors_ptr),y
+
+    ; Remove door from available doors in current room
+    lda (avail_doors_ptr),y
+    sub #DOOR_NORTH
+    sta (avail_doors_ptr),y
+
+    ; Move the room position
+    lda room_pos
+    sub #map_room_columns
+    sta room_pos
+
+    get_doors()
+
+    ; Remove door from available doors in the new room
+    ldy room_pos
+    lda (avail_doors_ptr),y
+    sub #DOOR_SOUTH
+    sta (avail_doors_ptr),y
+    
+    rts
+    .endp
+
+; Walk south
+; Input Registers:
+; Y = room position
+; Updates current avail and placed doors
+; Moves room position to new room
+; Updates new available doors to prevent backtracking
+.proc walk_south (.byte y) .reg
+    ; Add door to placed rooms in current room
+    lda (placed_doors_ptr),y
+    add #DOOR_SOUTH
+    sta (placed_doors_ptr),y
+
+    ; Remove door from available doors in current room
+    lda (avail_doors_ptr),y
+    sub #DOOR_SOUTH
+    sta (avail_doors_ptr),y
+    ; Move the room position
+    lda room_pos
+    add #map_room_columns
+    sta room_pos
+    
+    get_doors()
+
+    ; Remove door from available doors in the new room
+    ldy room_pos
+    lda (avail_doors_ptr),y
+    sub #DOOR_NORTH
+    sta (avail_doors_ptr),y
+    
+    rts
+    .endp
+
+; Walk west
+; Input Registers:
+; Y = room position
+; Updates current avail and placed doors
+; Moves room position to new room
+; Updates new available doors to prevent backtracking
+.proc walk_west (.byte y) .reg
+    ; Add door to placed rooms in current room
+    lda (placed_doors_ptr),y
+    add #DOOR_WEST
+    sta (placed_doors_ptr),y
+
+    ; Remove door from available doors in current room
+    lda (avail_doors_ptr),y
+    sub #DOOR_WEST
+    sta (avail_doors_ptr),y
+
+    ; Move the room position
+    dec room_pos
+    
+    get_doors()
+
+    ; Remove door from available doors in the new room
+    ldy room_pos
+    lda (avail_doors_ptr),y
+    sub #DOOR_EAST
+    sta (avail_doors_ptr),y
+
+    rts
+    .endp
+
+; Walk east
+; Input Registers:
+; Y = room position
+; Updates current avail and placed doors
+; Moves room position to new room
+; Updates new available doors to prevent backtracking
+.proc walk_east (.byte y) .reg
+    ; Add door to placed rooms in current room
+    lda (placed_doors_ptr),y
+    add #DOOR_EAST
+    sta (placed_doors_ptr),y
+
+    ; Remove door from available doors in current room
+    lda (avail_doors_ptr),y
+    sub #DOOR_EAST
+    sta (avail_doors_ptr),y
+
+    ; Move the room position
+    inc room_pos
+
+    get_doors()
+
+    ; Remove door from available doors in the new room
+    ldy room_pos
+    lda (avail_doors_ptr),y
+    sub #DOOR_WEST
+    sta (avail_doors_ptr),y
+    
     rts
     .endp

@@ -21,8 +21,9 @@ map     			= $2000 ; Map (16K+)
 screen  			= $7000 ; Screen buffer (480 bytes)
 status_line			= $71e0 ; Status Line (40 bytes)
 tmp_room			= $7208 ; Temp room (225 bytes)
-room_doors			= $72e9 ; Room doors (64 bytes)
-
+placed_doors		= $72e9 ; Doors that have been placed (64 bytes)
+avail_doors			= $7329	; Doors that are available (64 bytes)
+occupied_rooms		= $7369 ; Rooms that are occupied (8 bytes)
 ; free
 pmg     			= $7400 ; Player Missle Data (1K)
 ; free
@@ -75,6 +76,8 @@ room_width			= 15
 room_height			= 15
 map_width 			= room_width * 8 + 7 + border * 2
 map_height 			= room_height * 8 + 7 + border * 2
+map_room_columns	= 8
+map_room_rows		= 8
 
 playfield_width = 11
 playfield_height = 11
@@ -92,6 +95,15 @@ room_y				= $ab
 room_ptr			= $ac ; 16 bit
 tmp_x				= $ae
 tmp_y				= $af
+num_rooms			= $b0
+max_rooms			= $b1
+placed_doors_ptr	= $b2 ; 16 bit
+avail_doors_ptr		= $b4 ; 16 bit
+room_col			= $b6
+room_row			= $b7
+pow2_ptr			= $b8 ; 16 bit
+occupied_rooms_ptr  = $ba ; 16 bit
+doors				= $bc
 
 ; Colors
 white = $0a
@@ -106,6 +118,9 @@ gold = $2a
 	sta player_y
 
 	mva #123 rand
+
+	mwa #powers_of_two pow2_ptr
+	mwa #occupied_rooms occupied_rooms_ptr
 
 	setup_colors()
 	mva #>charset_outdoor_a CHBAS
@@ -651,3 +666,6 @@ no_eor
 	icl 'room_positions.asm'
 	icl 'room_pos_doors'
 	icl 'room_type_doors'
+
+powers_of_two
+	.byte 1,2,4,8,16,32,64,128
