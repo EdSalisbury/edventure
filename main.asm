@@ -18,6 +18,7 @@
 
 ; RAM: $2000-7FFF - 24K
 map     			= $2000 ; Map (16K+)
+; free (almost 4K)
 screen  			= $7000 ; Screen buffer (480 bytes)
 status_line			= $71e0 ; Status Line (40 bytes)
 tmp_room			= $7208 ; Temp room (225 bytes)
@@ -26,6 +27,8 @@ avail_doors			= $7329	; Doors that are available (64 bytes)
 occupied_rooms		= $7369 ; Rooms that are occupied (8 bytes)
 ; free
 pmg     			= $7400 ; Player Missle Data (1K)
+cur_charset_a		= $7800 ; Currently copied character set (A) (1K)
+cur_charset_b		= $7c00 ; Currently copied character set (B) (1K)
 ; free
 
 ; 16K Cartridge ROM: $8000-BFFF - 16K
@@ -123,6 +126,8 @@ gold = $2a
 	mwa #occupied_rooms occupied_rooms_ptr
 
 	setup_colors()
+
+	copy_data charset_dungeon_a cur_charset_a 4
 	mva #>charset_outdoor_a CHBAS
 	clear_pmg()
 	load_pmg()

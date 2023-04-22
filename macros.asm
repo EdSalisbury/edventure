@@ -37,3 +37,45 @@ loop
 done
     adbw :ptr :offset
     .endm
+
+.macro copy_data src dest num_pages
+    mwa #:src tmp_addr1
+    mwa #:dest tmp_addr2
+
+    ldy #0
+    ldx #0
+loop
+    lda (tmp_addr1), y
+    sta (tmp_addr2), y
+    iny
+    bne loop
+    inc tmp_addr1 + 1
+    inc tmp_addr2 + 1
+    inx
+    cpx #:num_pages
+    bne loop
+    .endm
+
+.macro copy_monsters start end
+    mwa #monsters_a tmp_addr1
+    mwa #cur_charset_a tmp_addr2
+
+    adw tmp_addr2 #102 ; Monsters offset in the character set
+    
+    lda #:start
+    asl             ; Multiply by two because tiles are two chars wide
+    tay
+
+    lda #:end
+    asl
+    sta tmp
+
+loop
+    lda (tmp_addr1), y
+    sta (tmp_addr2), y
+    iny
+
+    cpy tmp
+    bcc loop
+    
+    .endm
