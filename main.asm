@@ -128,6 +128,7 @@ gold = $2a
 	setup_colors()
 
 	copy_data charset_dungeon_a cur_charset_a 4
+	copy_monsters 0 8
 	mva #>charset_outdoor_a CHBAS
 	clear_pmg()
 	load_pmg()

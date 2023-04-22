@@ -60,13 +60,15 @@ loop
     mwa #monsters_a tmp_addr1
     mwa #cur_charset_a tmp_addr2
 
-    adw tmp_addr2 #102 ; Monsters offset in the character set
+    adw tmp_addr2 #(86 * 8) ; Monsters offset in the character set
     
     lda #:start
     asl             ; Multiply by two because tiles are two chars wide
     tay
 
     lda #:end
+    asl
+    asl
     asl
     sta tmp
 
@@ -76,6 +78,6 @@ loop
     iny
 
     cpy tmp
-    bcc loop
+    bne loop
     
     .endm
