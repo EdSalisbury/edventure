@@ -29,7 +29,7 @@ skip_carry
 
     ldy #0
 loop
-    adbw :ptr :width
+    adw :ptr :width
     iny
     cpy :count
     bne loop
@@ -70,6 +70,7 @@ loop
     asl
     asl
     asl
+    asl
     sta tmp
 
 loop
@@ -81,3 +82,51 @@ loop
     bne loop
     
     .endm
+
+.proc place_monsters (.byte x,a) .reg
+    //;##TRACE "Placing monsters"
+    sta tmp2
+    //;##TRACE "X: %d" @x
+pick
+
+    random16
+    //;##TRACE "Random monster chosen: %d" @a
+    and #15
+    //;##TRACE "AND #15: %d" @a
+    cmp tmp2
+    bcs pick
+    
+    add #43
+    sta tmp
+
+place
+    //;##TRACE "Placing monster %d" db(tmp)
+    ; pick random x
+    random16
+    and #$7f
+    ;cmp #map_width
+    ;bcs place
+    sta tmp_x
+    ; pick random y
+    random16
+    and #$7f
+    ;cmp #map_height
+    ;bcs place
+    sta tmp_y
+    //;##TRACE "tmp_x = %d, tmp_y = %d" db(tmp_x) db(tmp_y)
+
+    advance_ptr #map map_ptr #map_width tmp_y tmp_x
+    ldy #0
+    lda (map_ptr),y
+    ;##TRACE "map_ptr[%d][%d] (%04x): %d" db(tmp_x) db(tmp_y) dw(map_ptr) @a
+    cmp #MAP_FLOOR
+    bne place
+    lda tmp
+    //;##TRACE "Placing monster %d at %d,%d" db(tmp) db(tmp_x) db(tmp_y)
+    sta (map_ptr),y
+    dex
+   // ;##TRACE "X = %d" @x
+    bne pick
+    
+    rts
+    .endp

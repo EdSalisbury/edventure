@@ -107,6 +107,8 @@ room_row			= $b7
 pow2_ptr			= $b8 ; 16 bit
 occupied_rooms_ptr  = $ba ; 16 bit
 doors				= $bc
+tmp2				= $bd
+rand16				= $be
 
 ; Colors
 white = $0a
@@ -121,6 +123,7 @@ gold = $2a
 	sta player_y
 
 	mva #123 rand
+	mva #200 rand16
 
 	mwa #powers_of_two pow2_ptr
 	mwa #occupied_rooms occupied_rooms_ptr
@@ -128,13 +131,15 @@ gold = $2a
 	setup_colors()
 
 	copy_data charset_dungeon_a cur_charset_a 4
-	copy_monsters 0 8
+	copy_monsters 0 12
+
 	mva #>charset_outdoor_a CHBAS
 	clear_pmg()
 	load_pmg()
 	setup_pmg()
 
 	new_map()
+	place_monsters #255 #12
 	setup_screen()
 	update_player_tiles()
 	display_borders()
@@ -655,6 +660,18 @@ loop
 	eor #$b4				; XOR with feedback value that produces a good sequence
 no_eor
 	sta rand				; Store the random number
+	rts
+	.endp
+
+.proc random16
+	lda rand				; Load in seed or last number generated
+	lsr						; Shift 1 place to the right
+	rol rand16
+	bcc no_eor				; Carry flag contains the last bit prior to shifting - if 0, skip XOR
+	eor #$b4				; XOR with feedback value that produces a good sequence
+no_eor
+	sta rand				; Store the random number
+	eor rand16
 	rts
 	.endp
 
