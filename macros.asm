@@ -37,3 +37,48 @@ loop
 done
     adbw :ptr :offset
     .endm
+
+.macro copy_data src dest num_pages
+    mwa #:src tmp_addr1
+    mwa #:dest tmp_addr2
+
+    ldy #0
+    ldx #0
+loop
+    lda (tmp_addr1),y
+    sta (tmp_addr2),y
+    iny
+    bne loop
+    inc tmp_addr1 + 1
+    inc tmp_addr2 + 1
+    inx
+    cpx #:num_pages
+    bne loop
+    .endm
+
+.macro copy_monsters start end
+    mwa #monsters_a tmp_addr1
+    mwa #cur_charset_a tmp_addr2
+
+    adw tmp_addr2 #(86 * 8)
+
+    lda #:start
+    asl
+    tay
+
+    lda #:end
+    asl
+    asl
+    asl
+    asl
+    sta tmp
+
+loop
+    lda (tmp_addr1),y
+    sta (tmp_addr2),y
+    iny
+
+    cpy tmp
+    bne loop
+
+    .endm
