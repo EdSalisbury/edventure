@@ -26,6 +26,8 @@ avail_doors			= $7329	; Doors that are available (64 bytes)
 occupied_rooms		= $7369 ; Rooms that are occupied (8 bytes)
 ; free
 pmg     			= $7400 ; Player Missle Data (1K)
+cur_charset_a		= $7800 ; Current character set A (1K)
+cur_charset_b		= $7c00 ; Current character set B (1K)
 ; free
 
 ; 16K Cartridge ROM: $8000-BFFF - 16K
@@ -104,6 +106,8 @@ room_row			= $b7
 pow2_ptr			= $b8 ; 16 bit
 occupied_rooms_ptr  = $ba ; 16 bit
 doors				= $bc
+tmp2				= $bd
+rand16				= $be
 
 ; Colors
 white = $0a
@@ -118,9 +122,13 @@ gold = $2a
 	sta player_y
 
 	mva #123 rand
+	mva #201 rand16
 
 	mwa #powers_of_two pow2_ptr
 	mwa #occupied_rooms occupied_rooms_ptr
+
+	copy_data charset_dungeon_a cur_charset_a 4
+	copy_monsters 0 8
 
 	setup_colors()
 	mva #>charset_outdoor_a CHBAS
@@ -129,6 +137,8 @@ gold = $2a
 	setup_pmg()
 
 	new_map()
+	place_monsters #255 #8
+
 	setup_screen()
 	update_player_tiles()
 	display_borders()
@@ -652,6 +662,53 @@ no_eor
 	rts
 	.endp
 
+.proc random16
+	lda rand				; Load in seed or last number generated
+	lsr						; Shift 1 place to the right
+	rol rand16
+	bcc no_eor				; Carry flag contains the last bit prior to shifting - if 0, skip XOR
+	eor #$b4				; XOR with feedback value that produces a good sequence
+no_eor
+	sta rand				; Store the random number
+	eor rand16
+	rts
+	.endp
+
+.proc place_monsters (.byte x,a) .reg
+	sta tmp2
+pick
+	random16
+	cmp tmp2
+	bcs pick
+
+	add #43
+	sta tmp
+
+place
+	random16
+	cmp #map_width
+	bcs place
+	sta tmp_x
+
+	random16
+	cmp #map_height
+	bcs place
+	sta tmp_y
+
+	advance_ptr #map map_ptr #map_width tmp_y tmp_x
+	ldy #0
+	lda (map_ptr),y
+	cmp #MAP_FLOOR
+	bne place
+	lda tmp
+	sta (map_ptr),y
+	dex
+	bne pick
+
+	rts
+	.endp
+
+
 	icl 'macros.asm'
 	icl 'hardware.asm'
 	icl 'labels.asm'
@@ -662,6 +719,7 @@ no_eor
 	icl 'charset_dungeon_a.asm'
 	icl 'charset_outdoor_a.asm'
 	icl 'monsters_a.asm'
+	icl 'monsters_b.asm'
 	icl 'room_types.asm'
 	icl 'room_positions.asm'
 	icl 'room_pos_doors'
