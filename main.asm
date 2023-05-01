@@ -86,7 +86,7 @@ playfield_height = 11
 
 game_timer = $a4
 game_tick = 10
-
+anim_speed = 20
 status_ptr = $a5
 
 rand				= $a7
@@ -108,6 +108,10 @@ occupied_rooms_ptr  = $ba ; 16 bit
 doors				= $bc
 tmp2				= $bd
 rand16				= $be
+charset_a			= $bf
+anim_counter		= $c0
+anim_timer			= $c1
+clock				= $c2
 
 ; Colors
 white = $0a
@@ -121,14 +125,17 @@ gold = $2a
 	sta player_x
 	sta player_y
 
+	mva #0 anim_counter
+	mva #0 charset_a
 	mva #123 rand
 	mva #201 rand16
-
 	mwa #powers_of_two pow2_ptr
 	mwa #occupied_rooms occupied_rooms_ptr
 
 	copy_data charset_dungeon_a cur_charset_a 4
-	copy_monsters 0 8
+	copy_data charset_dungeon_b cur_charset_b 4
+	copy_monsters monsters_a cur_charset_a 0 12
+	copy_monsters monsters_b cur_charset_b 0 12
 
 	setup_colors()
 	mva #>charset_outdoor_a CHBAS
@@ -137,7 +144,7 @@ gold = $2a
 	setup_pmg()
 
 	new_map()
-	place_monsters #255 #8
+	place_monsters #200 #12
 
 	setup_screen()
 	update_player_tiles()
@@ -146,15 +153,37 @@ gold = $2a
 	reset_timer
 
 game
-	lda RTCLK2
-	cmp game_timer
-	bne game
-
-	read_joystick()
-	reset_timer
-	blit_screen()
-
+	mva RTCLK2 clock
+	animate
+	get_input
 	jmp game
+
+.macro animate
+	lda clock
+	cmp anim_timer
+	bne done
+	lda charset_a
+	eor #$ff
+	sta charset_a
+	blit_screen
+	lda clock
+	add #anim_speed
+	sta anim_timer
+done
+	.endm
+
+.macro get_input
+	lda clock
+	cmp game_timer
+	bne done
+	read_joystick
+	blit_screen
+	lda clock
+	add #game_tick
+	sta game_timer
+done
+	.endm
+	
 
 .macro reset_timer
 	lda RTCLK2
@@ -717,6 +746,7 @@ place
 	icl 'map_gen.asm'
 
 	icl 'charset_dungeon_a.asm'
+	icl 'charset_dungeon_b.asm'
 	icl 'charset_outdoor_a.asm'
 	icl 'monsters_a.asm'
 	icl 'monsters_b.asm'
