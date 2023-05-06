@@ -70,9 +70,9 @@ on_tile		= $9e
 tmp_addr1	= $a0
 tmp_addr2   = $a2
 
-screen_char_width = 40
-screen_width = 19
-screen_height = 11
+screen_char_width 	= 40
+screen_width 		= 19
+screen_height 		= 11
 border				= 6
 room_width			= 15
 room_height			= 15
@@ -81,14 +81,14 @@ map_height 			= room_height * 8 + 7 + border * 2
 map_room_columns	= 8
 map_room_rows		= 8
 
-playfield_width = 11
-playfield_height = 11
+playfield_width 	= 11
+playfield_height 	= 11
 
-game_timer = $a4
-game_tick = 10
+input_speed 		= 5
+anim_speed 			= 20
 
-status_ptr = $a5
-
+input_timer 		= $a4
+status_ptr 			= $a5 ; 16 bit
 rand				= $a7
 room_type			= $a8
 room_pos			= $a9
@@ -108,6 +108,9 @@ occupied_rooms_ptr  = $ba ; 16 bit
 doors				= $bc
 tmp2				= $bd
 rand16				= $be
+clock				= $bf
+anim_timer			= $c0
+charset_a			= $c1
 
 ; Colors
 white = $0a
@@ -128,7 +131,9 @@ gold = $2a
 	mwa #occupied_rooms occupied_rooms_ptr
 
 	copy_data charset_dungeon_a cur_charset_a 4
-	copy_monsters 0 8
+	copy_data charset_dungeon_b cur_charset_b 4
+	copy_monsters monsters_a cur_charset_a 0 12
+	copy_monsters monsters_b cur_charset_b 0 12
 
 	setup_colors()
 	mva #>charset_outdoor_a CHBAS
@@ -137,31 +142,44 @@ gold = $2a
 	setup_pmg()
 
 	new_map()
-	place_monsters #255 #8
+	place_monsters #255 #12
 
 	setup_screen()
 	update_player_tiles()
 	display_borders()
 	update_ui()
-	reset_timer
 
 game
-	lda RTCLK2
-	cmp game_timer
-	bne game
-
-	read_joystick()
-	reset_timer
-	blit_screen()
-
+	mva RTCLK2 clock
+	animate
+	get_input
 	jmp game
 
-.macro reset_timer
-	lda RTCLK2
-	add #game_tick
-	sta game_timer
+.macro get_input
+	lda clock
+	cmp input_timer
+	bne done
+	read_joystick()
+	blit_screen()
+	lda clock
+	add #input_speed
+	sta input_timer
+done
 	.endm
 
+.macro animate
+	lda clock
+	cmp anim_timer
+	bne done
+	lda charset_a
+	eor #$ff
+	sta charset_a
+	blit_screen
+	lda clock
+	add #anim_speed
+	sta anim_timer
+done
+	.endm
 
 .proc read_joystick
 	lda STICK0
@@ -717,6 +735,7 @@ place
 	icl 'map_gen.asm'
 
 	icl 'charset_dungeon_a.asm'
+	icl 'charset_dungeon_b.asm'
 	icl 'charset_outdoor_a.asm'
 	icl 'monsters_a.asm'
 	icl 'monsters_b.asm'

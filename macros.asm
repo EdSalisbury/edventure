@@ -56,9 +56,9 @@ loop
     bne loop
     .endm
 
-.macro copy_monsters start end
-    mwa #monsters_a tmp_addr1
-    mwa #cur_charset_a tmp_addr2
+.macro copy_monsters src dest start end
+    mwa #:src tmp_addr1
+    mwa #:dest tmp_addr2
 
     adw tmp_addr2 #(86 * 8)
 
