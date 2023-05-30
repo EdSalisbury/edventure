@@ -38,10 +38,14 @@ charset_outdoor_a 	= $8800 ; Character Set for outdoors (1K)
 charset_outdoor_b 	= $8c00 ; Character Set for outdoors (1K)
 
 ; 9000-9FFF
-monsters_a          = $9000 ; Monster characters (1K)
-monsters_b          = $9400 ; Monster characters (1K)
+
 ; free
-dlist				= $9800
+monsters_a          = $9400 ; Monster characters (1K)
+monsters_b          = $9800 ; Monster characters (1K)
+dlist				= $9c00 ; Display List (106 bytes)
+;monster_details		= $9d00 ; Monster details (325 bytes)
+
+; free
 room_types			= $a000 ; 3600 Bytes
 room_positions		= $ae10	; 128 bytes
 room_pos_doors		= $ae90 ; 64 bytes
@@ -726,7 +730,6 @@ place
 	rts
 	.endp
 
-
 	icl 'macros.asm'
 	icl 'hardware.asm'
 	icl 'labels.asm'
@@ -739,6 +742,7 @@ place
 	icl 'charset_outdoor_a.asm'
 	icl 'monsters_a.asm'
 	icl 'monsters_b.asm'
+	;icl 'monster_details.asm'
 	icl 'room_types.asm'
 	icl 'room_positions.asm'
 	icl 'room_pos_doors'
