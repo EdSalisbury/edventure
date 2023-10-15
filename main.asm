@@ -38,14 +38,13 @@ charset_outdoor_a 	= $8800 ; Character Set for outdoors (1K)
 charset_outdoor_b 	= $8c00 ; Character Set for outdoors (1K)
 
 ; 9000-9FFF
-
+monsters_a          = $9000 ; Monster characters (1K)
+monsters_b          = $9400 ; Monster characters (1K)
+dlist				= $af00 ; Display List (106 bytes)
 ; free
-monsters_a          = $9400 ; Monster characters (1K)
-monsters_b          = $9800 ; Monster characters (1K)
-dlist				= $9c00 ; Display List (106 bytes)
-;monster_details		= $9d00 ; Monster details (325 bytes)
-
+monster_details		= $9900 ; Monster details (406 bytes)
 ; free
+
 room_types			= $a000 ; 3600 Bytes
 room_positions		= $ae10	; 128 bytes
 room_pos_doors		= $ae90 ; 64 bytes
@@ -84,12 +83,15 @@ map_width 			= room_width * 8 + 7 + border * 2
 map_height 			= room_height * 8 + 7 + border * 2
 map_room_columns	= 8
 map_room_rows		= 8
+monster_icon_offset = 43
+monster_char_offset = 86
 
 playfield_width 	= 11
 playfield_height 	= 11
 
 input_speed 		= 5
 anim_speed 			= 20
+
 
 input_timer 		= $a4
 status_ptr 			= $a5 ; 16 bit
@@ -115,6 +117,11 @@ rand16				= $be
 clock				= $bf
 anim_timer			= $c0
 charset_a			= $c1
+level				= $c2
+num_monsters		= $c3
+min_monster			= $c4
+max_monster			= $c5
+monster_list 		= $d0 ; 12 bytes
 
 ; Colors
 white = $0a
@@ -130,14 +137,27 @@ gold = $2a
 
 	mva #123 rand
 	mva #201 rand16
+	mva #0 level
+	mva #150 num_monsters
+	mva #0 min_monster
+	mva #12 max_monster
 
 	mwa #powers_of_two pow2_ptr
 	mwa #occupied_rooms occupied_rooms_ptr
 
 	copy_data charset_dungeon_a cur_charset_a 4
 	copy_data charset_dungeon_b cur_charset_b 4
-	copy_monsters monsters_a cur_charset_a 0 12
-	copy_monsters monsters_b cur_charset_b 0 12
+	copy_monsters monsters_a cur_charset_a min_monster max_monster
+	copy_monsters monsters_b cur_charset_b min_monster max_monster
+
+	; Record list of current monsters (up to 12)
+	lda min_monster
+	tax
+loop
+	sta monster_list,x
+	inx
+	cpx #max_monster
+	bne loop
 
 	setup_colors()
 	mva #>charset_outdoor_a CHBAS
@@ -146,8 +166,10 @@ gold = $2a
 	setup_pmg()
 
 	new_map()
-	place_monsters #255 #12
+	place_monsters num_monsters max_monster
 
+	nop
+	;nop
 	setup_screen()
 	update_player_tiles()
 	display_borders()
@@ -339,9 +361,27 @@ loop
 	rts
 	.endp
 
+
 .macro blit_tile
 	lda (map_ptr),y			; Load the tile from the map
+	; y = position
+	; a = tile number
+	; if tile number is in the range of monsters (43 - 59)
+	; Get the monster index (subtract the monster_icon_offset)
+	; Get the monster number from monsters_list with the monster_index offset
+	; Get the monster_char_offset, using the monster number
+	tya
+	bcc next
+
+	tax
+
+
 	asl						; Multiply by two to get left character
+	
+
+	
+	add #128
+next
 	sta (screen_ptr),y		; Store the left character
 	inc16 screen_ptr		; Advance the screen pointer
 	add #1					; Add one to get right character
@@ -432,10 +472,10 @@ loop
 	.endp
 
 .macro blit_char char addr pos
-	lda :char
-	ldy :pos
-	sta (:addr),y
-	.endm
+ 	lda :char
+ 	ldy :pos
+ 	sta (:addr),y
+ 	.endm
 
 .macro blit_char_row char addr start end
 	lda :char
@@ -702,8 +742,7 @@ pick
 	random16
 	cmp tmp2
 	bcs pick
-
-	add #43
+	add #monster_icon_offset
 	sta tmp
 
 place
@@ -733,16 +772,17 @@ place
 	icl 'macros.asm'
 	icl 'hardware.asm'
 	icl 'labels.asm'
-	icl 'dlist.asm'
 	icl 'pmgdata.asm'
 	icl 'map_gen.asm'
+	
 
 	icl 'charset_dungeon_a.asm'
 	icl 'charset_dungeon_b.asm'
 	icl 'charset_outdoor_a.asm'
 	icl 'monsters_a.asm'
 	icl 'monsters_b.asm'
-	;icl 'monster_details.asm'
+	icl 'dlist.asm'
+	icl 'monster_details.asm'
 	icl 'room_types.asm'
 	icl 'room_positions.asm'
 	icl 'room_pos_doors'

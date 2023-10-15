@@ -60,13 +60,13 @@ loop
     mwa #:src tmp_addr1
     mwa #:dest tmp_addr2
 
-    adw tmp_addr2 #(86 * 8)
+    adw tmp_addr2 #(monster_char_offset * 8)
 
-    lda #:start
+    lda :start
     asl
     tay
 
-    lda #:end
+    lda :end
     asl
     asl
     asl
