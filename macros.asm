@@ -38,6 +38,21 @@ done
     adbw :ptr :offset
     .endm
 
+.macro copy_bytes src dest num_bytes
+    mwa #:src tmp_addr1
+    mwa #:dest tmp_addr2
+
+    ldy #0
+loop
+    lda (tmp_addr1),y
+    sta (tmp_addr2),y
+    iny
+    cpy #:num_bytes
+    bne loop
+
+    .endm
+
+
 .macro copy_data src dest num_pages
     mwa #:src tmp_addr1
     mwa #:dest tmp_addr2

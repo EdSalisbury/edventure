@@ -24,11 +24,11 @@ tmp_room			= $7208 ; Temp room (225 bytes)
 placed_doors		= $72e9 ; Doors that have been placed (64 bytes)
 avail_doors			= $7329	; Doors that are available (64 bytes)
 occupied_rooms		= $7369 ; Rooms that are occupied (8 bytes)
+cur_char_colors		= $7371 ; Current character colors (16 bytes)
 ; free
 pmg     			= $7400 ; Player Missle Data (1K)
 cur_charset_a		= $7800 ; Current character set A (1K)
 cur_charset_b		= $7c00 ; Current character set B (1K)
-; free
 
 ; 16K Cartridge ROM: $8000-BFFF - 16K
 ; 8000-8FFF
@@ -46,7 +46,9 @@ room_types			= $a000 ; 3600 Bytes
 room_positions		= $ae10	; 128 bytes
 room_pos_doors		= $ae90 ; 64 bytes
 room_type_doors		= $aed0 ; 16 bytes
-
+dungeon_colors		= $aee0 ; 16 bytes
+outdoor_colors		= $aef0 ; 16 bytes
+monster_colors		= $af00 ; 16 bytes
 ; free
 
 ; B000-BFFF (Code)
@@ -132,8 +134,11 @@ gold = $2a
 
 	copy_data charset_dungeon_a cur_charset_a 4
 	copy_data charset_dungeon_b cur_charset_b 4
+	copy_bytes dungeon_colors cur_char_colors 16
+
 	copy_monsters monsters_a cur_charset_a 0 12
 	copy_monsters monsters_b cur_charset_b 0 12
+	; TODO: Copy monster colors into correct locations
 
 	setup_colors()
 	mva #>charset_outdoor_a CHBAS
@@ -335,15 +340,99 @@ loop
 	rts
 	.endp
 
+
+;.macro blit_tile
+;	lda (map_ptr),y			; Load the tile from the map
+;	asl						; Multiply by two to get left character
+;	sta (screen_ptr),y		; Store the left character
+;	inc16 screen_ptr		; Advance the screen pointer
+;	add #1					; Add one to get right character
+;	sta (screen_ptr),y		; Store the right character
+;	adw map_ptr #1			; Advance the map pointer
+;	adw screen_ptr #1		; Advance the screen pointer	
+;	.endm
+
 .macro blit_tile
+	; Save X
+	pha
+	txa
+	pha
+
 	lda (map_ptr),y			; Load the tile from the map
 	asl						; Multiply by two to get left character
+	sta tmp 				; save it into tmp
+	
+; Check if the character needs to have 128 added
+	and #%00000111			; Get the bit position in cur_char_colors (before shifting)
+	sta tmp2				; store in tmp2 (0-7)
+	lda tmp					; Reload from tmp
+	lsr						; Shift right x3 for division by 8
+	lsr						
+	lsr
+	tax						; Store in x
+	lda cur_char_colors,X	; Load color byte
+	
+	lsr
+;
+;	; Shift right the required number of times to isolate the bit (shifts into the carry bit)
+check_bit_l
+	lsr
+	dec tmp2
+	bne check_bit_l
+;
+	bcc skip_add_128_l		; If carry flag is cleared, skip
+;
+;	; Add 128 to the char
+	lda tmp
+	add #128
+	sta tmp
+
+skip_add_128_l
+	lda tmp
 	sta (screen_ptr),y		; Store the left character
 	inc16 screen_ptr		; Advance the screen pointer
+
+; Right character
+
+	lda (map_ptr),y			; Load the tile from the map
+	asl						; Multiply by two
 	add #1					; Add one to get right character
+	sta tmp 				; save it into tmp
+;
+;	; Check if the character needs to have 128 added
+	and #%00000111			; Get the bit position in cur_char_colors (before shifting)
+	sta tmp2				; store in tmp2 (0-7)
+	lda tmp					; Reload from tmp
+	lsr						; Shift right x3 for division by 8
+	lsr						
+	lsr
+	tax						; Store in x
+	lda cur_char_colors,X	; Load color byte %01000010
+
+	lsr
+	; Shift right the required number of times to isolate the bit (shifts into the carry bit)
+check_bit_r:
+	lsr
+	dec tmp2
+	bne check_bit_r
+;
+	bcc skip_add_128_r		; If carry flag is cleared, skip
+;
+;	; Add 128 to the char
+	lda tmp
+	add #128
+	sta tmp
+;	
+skip_add_128_r:
+	lda tmp
 	sta (screen_ptr),y		; Store the right character
 	adw map_ptr #1			; Advance the map pointer
-	adw screen_ptr #1		; Advance the screen pointer	
+	adw screen_ptr #1		; Advance the screen pointer
+
+	; Put X back
+	pla
+	tax
+	pla
 	.endm
 
 .macro blit_circle_line body, map_space, screen_space
@@ -692,37 +781,42 @@ no_eor
 	rts
 	.endp
 
+; Pick and place monsters
+; x = max monster number
+; a = quantity of monsters
 .proc place_monsters (.byte x,a) .reg
-	sta tmp2
+	sta tmp2				; Copy max monster num from a to tmp2
 pick
-	random16
-	cmp tmp2
-	bcs pick
+	random16				; Get random number in A
+	cmp tmp2				; Compare with max monster num
+	bcs pick				; If the number is greater than max monster number, re-pick
 
-	add #43
-	sta tmp
+	add #43					; Monster is good, so add 43 to move it to the proper character
+	sta tmp					; Store monster num into tmp
 
 place
-	random16
-	cmp #map_width
-	bcs place
-	sta tmp_x
+	random16				; Get random number for X and store it in A
+	cmp #map_width			; Verify that it's within the map horizontally
+	bcs place				; If not, get another value
+	sta tmp_x				; It's good, so store in tmp_x
 
-	random16
-	cmp #map_height
-	bcs place
-	sta tmp_y
+	random16				; Get random number for Y and store it in A
+	cmp #map_height			; Verify that it's within the map vertically
+	bcs place				; If not, start over with getting X again
+	sta tmp_y				; We have both valid X and Y, so store into tmp_y
 
+	; Move the map to the location of the monster
 	advance_ptr #map map_ptr #map_width tmp_y tmp_x
 	ldy #0
-	lda (map_ptr),y
-	cmp #MAP_FLOOR
-	bne place
-	lda tmp
-	sta (map_ptr),y
-	dex
-	bne pick
+	lda (map_ptr),y			; Get the character at the current position
+	cmp #MAP_FLOOR			; Verify that it's a floor tile (only place on floors)
+	bne place				; If not, start all over again
+	lda tmp					; It must be a floor tile, so load in monster from tmp
+	sta (map_ptr),y			; Copy it to the map
+	dex						; Reduce x so that we can get another monster with the loop
+	bne pick				; Get the next monster
 
+	; Otherwise, we're done picking and placing monsters
 	rts
 	.endp
 
@@ -743,6 +837,7 @@ place
 	icl 'room_positions.asm'
 	icl 'room_pos_doors'
 	icl 'room_type_doors'
+	icl 'char_colors.asm'
 
 powers_of_two
 	.byte 1,2,4,8,16,32,64,128

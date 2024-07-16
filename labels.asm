@@ -7,7 +7,9 @@ MAP_WALL                = 1
 MAP_FLOOR               = 127
 MAP_UP                  = 120
 MAP_DOWN                = 119
-MAP_DOOR                = 122
+;MAP_DOOR                = 122 ; Commented out because we want to make sure the door coloring works
+MAP_DOOR                = 4
+
 
 UI_VERT_BORDER          = 1
 UI_HORIZ_BORDER         = 4
