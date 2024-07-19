@@ -46,9 +46,12 @@ room_types			= $a000 ; 3600 Bytes
 room_positions		= $ae10	; 128 bytes
 room_pos_doors		= $ae90 ; 64 bytes
 room_type_doors		= $aed0 ; 16 bytes
-dungeon_colors		= $aee0 ; 16 bytes
-outdoor_colors		= $aef0 ; 16 bytes
-monster_colors		= $af00 ; 16 bytes
+charset_dungeon_a_colors		= $aee0 ; 16 bytes
+charset_dungeon_b_colors		= $aef0 ; 16 bytes
+charset_outdoor_a_colors		= $af00 ; 16 bytes
+charset_outdoor_b_colors		= $af10 ; 16 bytes
+monster_a_colors		= $af20 ; 16 bytes
+monster_b_colors		= $af30 ; 16 bytes
 ; free
 
 ; B000-BFFF (Code)
@@ -134,7 +137,7 @@ gold = $2a
 
 	copy_data charset_dungeon_a cur_charset_a 4
 	copy_data charset_dungeon_b cur_charset_b 4
-	copy_bytes dungeon_colors cur_char_colors 16
+	copy_bytes charset_dungeon_a_colors cur_char_colors 16
 
 	copy_monsters monsters_a cur_charset_a 0 12
 	copy_monsters monsters_b cur_charset_b 0 12
@@ -340,99 +343,58 @@ loop
 	rts
 	.endp
 
+* --------------------------------------- *
+* Proc: fix_color                         *
+* Fixes colors for a character if needed  *
+* --------------------------------------- *
+.macro fix_color
+	; A = character index to fix color if needed
+	sta tmp					; Save character to temp var
+	lsr						; Divide by 8 to get color index
+	lsr						; 
+	lsr						; 
+	tax						; Store into x to be able to use as an offset
+	lda cur_char_colors,X	; Get the color bits for this character
+	sta tmp2				; Store color bitmap to temp var for later
+	lda tmp					; Reload character
+	and #$07				; Mask out last 3 bits
+	beq shift_once			; If it's 0, we need to shift once
+	tax						; Store amount of bits to shift to x
+	lda tmp2				; Load color bitmap back into A
 
-;.macro blit_tile
-;	lda (map_ptr),y			; Load the tile from the map
-;	asl						; Multiply by two to get left character
-;	sta (screen_ptr),y		; Store the left character
-;	inc16 screen_ptr		; Advance the screen pointer
-;	add #1					; Add one to get right character
-;	sta (screen_ptr),y		; Store the right character
-;	adw map_ptr #1			; Advance the map pointer
-;	adw screen_ptr #1		; Advance the screen pointer	
-;	.endm
+shift_bits
+	lsr						; Shift color bits right
+	dex						; Decrement x
+	bne shift_bits			; Keep shifting as needed
+	bcs add_color			; If carry flag is set, we need to add to the character
+	jmp done				; No carry flag, we're done
+
+shift_once
+	lda tmp2				; Load color bitmap back into A
+	lsr						; Shift color bits right
+	bcs add_color			; If carry flag is set, we need to add to the character
+	jmp done				; No carry flag, we're done
+
+add_color
+	lda tmp					; Load character back into A
+	add #128				; Add 128 to change to secondary color
+	sta tmp					; Save back to tmp
+
+done
+	lda tmp					; Load potentially modified chracter back into A
+	.endm	
 
 .macro blit_tile
-	; Save X
-	pha
-	txa
-	pha
-
 	lda (map_ptr),y			; Load the tile from the map
 	asl						; Multiply by two to get left character
-	sta tmp 				; save it into tmp
-	
-; Check if the character needs to have 128 added
-	and #%00000111			; Get the bit position in cur_char_colors (before shifting)
-	sta tmp2				; store in tmp2 (0-7)
-	lda tmp					; Reload from tmp
-	lsr						; Shift right x3 for division by 8
-	lsr						
-	lsr
-	tax						; Store in x
-	lda cur_char_colors,X	; Load color byte
-	
-	lsr
-;
-;	; Shift right the required number of times to isolate the bit (shifts into the carry bit)
-check_bit_l
-	lsr
-	dec tmp2
-	bne check_bit_l
-;
-	bcc skip_add_128_l		; If carry flag is cleared, skip
-;
-;	; Add 128 to the char
-	lda tmp
-	add #128
-	sta tmp
-
-skip_add_128_l
-	lda tmp
+	fix_color				; Fix the color if needed
 	sta (screen_ptr),y		; Store the left character
 	inc16 screen_ptr		; Advance the screen pointer
-
-; Right character
-
-	lda (map_ptr),y			; Load the tile from the map
-	asl						; Multiply by two
 	add #1					; Add one to get right character
-	sta tmp 				; save it into tmp
-;
-;	; Check if the character needs to have 128 added
-	and #%00000111			; Get the bit position in cur_char_colors (before shifting)
-	sta tmp2				; store in tmp2 (0-7)
-	lda tmp					; Reload from tmp
-	lsr						; Shift right x3 for division by 8
-	lsr						
-	lsr
-	tax						; Store in x
-	lda cur_char_colors,X	; Load color byte %01000010
-
-	lsr
-	; Shift right the required number of times to isolate the bit (shifts into the carry bit)
-check_bit_r:
-	lsr
-	dec tmp2
-	bne check_bit_r
-;
-	bcc skip_add_128_r		; If carry flag is cleared, skip
-;
-;	; Add 128 to the char
-	lda tmp
-	add #128
-	sta tmp
-;	
-skip_add_128_r:
-	lda tmp
+	fix_color				; Fix the color if needed
 	sta (screen_ptr),y		; Store the right character
 	adw map_ptr #1			; Advance the map pointer
-	adw screen_ptr #1		; Advance the screen pointer
-
-	; Put X back
-	pla
-	tax
-	pla
+	adw screen_ptr #1		; Advance the screen pointer	
 	.endm
 
 .macro blit_circle_line body, map_space, screen_space
@@ -837,7 +799,7 @@ place
 	icl 'room_positions.asm'
 	icl 'room_pos_doors'
 	icl 'room_type_doors'
-	icl 'char_colors.asm'
+	icl 'charset_dungeon_a_colors.asm'
 
 powers_of_two
 	.byte 1,2,4,8,16,32,64,128

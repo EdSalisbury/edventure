@@ -32,18 +32,30 @@ colors = ["11", "11", "10", "01", "00"]
 
 basename = os.path.basename(args.image_file).rsplit('.', 1)[0]
 output_filename = basename + ".asm"
+colors_filename = basename + "_colors.asm"
 
+c = open(colors_filename, "w")
+c.write(f"\torg {basename}_colors\n")
+color_bits = ""
 f = open(output_filename, "w")
 f.write("\torg " + basename)
 char = 0
 for row in range(int(height / tile_height)):
     for col in range(int(width / tile_width)):
         f.write(f"\t; char {char}\n")
+        bit = "0"
         for y in range(row * tile_height, row * tile_height + tile_height):
             f.write("\t.byte %")
             for x in range(col * tile_width, col * tile_width + tile_width):
                 code = colors[pixels[y][x]]
+                if pixels[y][x] == 1:
+                    bit = "1"
                 f.write(code)
+                
             f.write("\n")
         char += 1
+        color_bits += bit
+        if not char % 8:
+            c.write(f"\n\t.byte %{color_bits[::-1]}")
+            color_bits = ""
 f.close()
