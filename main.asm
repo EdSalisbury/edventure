@@ -350,39 +350,36 @@ loop
 .macro fix_color
 	; A = character index to fix color if needed
 	sta tmp					; Save character to temp var
+	txa						; Copy X to A to be able to push to stack
+	pha						; Push A(X) onto the stack
+	lda tmp					; Reload the character
+	and #$07				; Get last 3 bits
+	add #1					; Add 1 so that we can shift correct number of times
+	sta tmp2				; Store bit shift amount to tmp2
+	lda tmp					; Reload char
 	lsr						; Divide by 8 to get color index
 	lsr						; 
 	lsr						; 
 	tax						; Store into x to be able to use as an offset
 	lda cur_char_colors,X	; Get the color bits for this character
-	sta tmp2				; Store color bitmap to temp var for later
-	lda tmp					; Reload character
-	and #$07				; Mask out last 3 bits
-	beq shift_once			; If it's 0, we need to shift once
-	tax						; Store amount of bits to shift to x
-	lda tmp2				; Load color bitmap back into A
 
 shift_bits
-	lsr						; Shift color bits right
-	dex						; Decrement x
-	bne shift_bits			; Keep shifting as needed
-	bcs add_color			; If carry flag is set, we need to add to the character
-	jmp done				; No carry flag, we're done
+	lsr						; Shift until bit is in the carry flag
+	dec tmp2				; Reduce shift counter
+	bne shift_bits			; Keep looping if shift counter isn't 0
 
-shift_once
-	lda tmp2				; Load color bitmap back into A
-	lsr						; Shift color bits right
-	bcs add_color			; If carry flag is set, we need to add to the character
-	jmp done				; No carry flag, we're done
+	bcc done				; If the carry flag is *not* set, we're done
 
 add_color
 	lda tmp					; Load character back into A
 	add #128				; Add 128 to change to secondary color
-	sta tmp					; Save back to tmp
+	sta tmp					; Re-save back to tmp after adding
 
 done
-	lda tmp					; Load potentially modified chracter back into A
-	.endm	
+	pla						; Pull old X from the stack via A
+	tax						; Restore X by copying from A
+	lda tmp					; Re-load character to A
+	.endm
 
 .macro blit_tile
 	lda (map_ptr),y			; Load the tile from the map
