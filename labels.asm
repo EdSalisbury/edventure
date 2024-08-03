@@ -7,9 +7,8 @@ MAP_WALL                = 1
 MAP_FLOOR               = 127
 MAP_UP                  = 120
 MAP_DOWN                = 119
-;MAP_DOOR                = 122 ; Commented out because we want to make sure the door coloring works
 MAP_DOOR                = 4
-
+MAP_DOORWAY             = 122
 
 UI_VERT_BORDER          = 1
 UI_HORIZ_BORDER         = 4
@@ -91,3 +90,5 @@ UI_AMULET_SW_ICON_LEFT	= 82
 UI_AMULET_SW_ICON_RIGHT	= 83
 UI_AMULET_SE_ICON_LEFT	= 84
 UI_AMULET_SE_ICON_RIGHT	= 85
+
+WALKABLE_START          = 56

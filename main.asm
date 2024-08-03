@@ -24,7 +24,8 @@ tmp_room			= $7208 ; Temp room (225 bytes)
 placed_doors		= $72e9 ; Doors that have been placed (64 bytes)
 avail_doors			= $7329	; Doors that are available (64 bytes)
 occupied_rooms		= $7369 ; Rooms that are occupied (8 bytes)
-cur_char_colors		= $7371 ; Current character colors (16 bytes)
+; free
+cur_char_colors		= $7380 ; Current character colors (16 bytes)
 ; free
 pmg     			= $7400 ; Player Missle Data (1K)
 cur_charset_a		= $7800 ; Current character set A (1K)
@@ -47,11 +48,8 @@ room_positions		= $ae10	; 128 bytes
 room_pos_doors		= $ae90 ; 64 bytes
 room_type_doors		= $aed0 ; 16 bytes
 charset_dungeon_a_colors		= $aee0 ; 16 bytes
-charset_dungeon_b_colors		= $aef0 ; 16 bytes
-charset_outdoor_a_colors		= $af00 ; 16 bytes
-charset_outdoor_b_colors		= $af10 ; 16 bytes
-monster_a_colors		= $af20 ; 16 bytes
-monster_b_colors		= $af30 ; 16 bytes
+charset_outdoor_colors		= $aef0 ; 16 bytes
+monster_colors		= $af00 ; 16 bytes
 ; free
 
 ; B000-BFFF (Code)
@@ -210,7 +208,7 @@ done
 
 move_up
 	lda up_tile
-	cmp #55
+	cmp #WALKABLE_START
 	bcc done
 	dec player_y
 	update_player_tiles()
@@ -218,7 +216,7 @@ move_up
 
 move_down
 	lda down_tile
-	cmp #55
+	cmp #WALKABLE_START
 	bcc done
 	inc player_y
 	update_player_tiles()
@@ -226,7 +224,7 @@ move_down
 
 move_left
 	lda left_tile
-	cmp #55
+	cmp #WALKABLE_START
 	bcc done
 	dec player_x
 	update_player_tiles()
@@ -234,7 +232,7 @@ move_left
 
 move_right
 	lda right_tile
-	cmp #55
+	cmp #WALKABLE_START
 	bcc done
 	inc player_x
 	update_player_tiles()
@@ -744,13 +742,14 @@ no_eor
 ; x = max monster number
 ; a = quantity of monsters
 .proc place_monsters (.byte x,a) .reg
+; 44 = monster tile start
 	sta tmp2				; Copy max monster num from a to tmp2
 pick
 	random16				; Get random number in A
 	cmp tmp2				; Compare with max monster num
 	bcs pick				; If the number is greater than max monster number, re-pick
 
-	add #43					; Monster is good, so add 43 to move it to the proper character
+	add #44					; Monster is good, so add 44 to move it to the proper character
 	sta tmp					; Store monster num into tmp
 
 place
