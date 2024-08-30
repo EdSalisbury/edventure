@@ -71,7 +71,7 @@ loop
     bne loop
     .endm
 
-.macro copy_monsters src dest start end
+.macro copy_monsters src dest start count
     ; Characters are 8 bytes wide
     ; Tiles are 2 bytes wide
     ; In the dungeon/outdoor charset, there's an open section starting at character 88
@@ -79,26 +79,17 @@ loop
     mwa #:src tmp_addr1         ; Copy monsters_X address to tmp_addr1 
     mwa #:dest tmp_addr2        ; Copy cur_charset_X address to tmp_addr2
 
-    adw tmp_addr2 #(88 * 8)     ; Move over to location in charset where monsters start
-
-    lda #:start                 ; Load the starting monster into A
-    asl                         ; Shift left (multiply by 2)
-    tay                         ; Copy to Y
-
-    ; Multiply by 16 to get ending byte
-    lda #:end                   ; Load the ending monster into A
-    asl                         ; Shift left 4 times (multiply by 16)
-    asl
-    asl
-    asl
-    sta tmp                     ; Store into tmp
-
+    adw tmp_addr2 #(88 * 8)         ; Move over to location in charset where monsters start
+    adw tmp_addr1 #(:start * 16)    ; Move over to the starting monster location
+    
+    lda #(:count * 16)          ; Start at the correct byte (8 * 2) for the ending monster       
+    tay                         ; Store in Y for looping
+    
 loop
+    dey                         ; Pre-decrement Y
     lda (tmp_addr1),y           ; Load monster character
     sta (tmp_addr2),y           ; Store monster character into charset
-    iny                         ; Increment Y
-
-    cpy tmp                     ; See if Y has reached the correct number of characters
-    bne loop                    ; If not, keep looping
+    cpy #0                      ; Check to see if Y=0
+    bne loop                    ; Y > 0, so keep looping
 
     .endm
