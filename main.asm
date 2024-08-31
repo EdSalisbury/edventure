@@ -114,6 +114,8 @@ rand16				= $be
 clock				= $bf
 anim_timer			= $c0
 charset_a			= $c1
+num_monsters		= $c2
+starting_monster    = $c3
 
 ; Colors
 white = $0a
@@ -123,12 +125,23 @@ peach = $2c
 blue = $92
 gold = $2a
 
+	mva #0 charset_a
+	mva #>charset_outdoor_a CHBAS
+
+	setup_screen()
+	update_player_tiles()
+	display_borders()
+	update_ui()
+
 	lda #16
 	sta player_x
 	sta player_y
 
 	mva #123 rand
 	mva #201 rand16
+
+	mva #5 num_monsters
+	mva #0 starting_monster
 
 	mwa #powers_of_two pow2_ptr
 	mwa #occupied_rooms occupied_rooms_ptr
@@ -137,23 +150,20 @@ gold = $2a
 	copy_data charset_dungeon_b cur_charset_b 4
 	copy_bytes charset_dungeon_a_colors cur_char_colors 16
 
-	copy_monsters monsters_a cur_charset_a 12 12
-	copy_monsters monsters_b cur_charset_b 12 12
+	copy_monsters monsters_a cur_charset_a starting_monster num_monsters
+	copy_monsters monsters_b cur_charset_b starting_monster num_monsters
 	; TODO: Copy monster colors into correct locations
 
 	setup_colors()
-	mva #>charset_outdoor_a CHBAS
+	
 	clear_pmg()
 	load_pmg()
 	setup_pmg()
 
 	new_map()
-	place_monsters #255 #12
+	place_monsters #255 num_monsters
 
-	setup_screen()
-	update_player_tiles()
-	display_borders()
-	update_ui()
+
 
 game
 	mva RTCLK2 clock

@@ -3,7 +3,7 @@
     bne skip_carry
     inc :addr + 1
 skip_carry
-    .endm
+.endm
 
 .macro dec16 addr
     lda :addr
@@ -11,7 +11,7 @@ skip_carry
     dec :addr + 1
 skip_borrow
     dec :addr
-    .endm
+.endm
 
 .macro adbw src val
     lda :src
@@ -20,7 +20,7 @@ skip_borrow
     bcc skip_carry
     inc :src + 1
 skip_carry
-    .endm
+.endm
 
 .macro advance_ptr data ptr width count offset
     mwa :data :ptr
@@ -36,7 +36,7 @@ loop
 
 done
     adbw :ptr :offset
-    .endm
+.endm
 
 .macro copy_bytes src dest num_bytes
     mwa #:src tmp_addr1
@@ -50,7 +50,7 @@ loop
     cpy #:num_bytes
     bne loop
 
-    .endm
+.endm
 
 
 .macro copy_data src dest num_pages
@@ -69,7 +69,7 @@ loop
     inx
     cpx #:num_pages
     bne loop
-    .endm
+.endm
 
 .macro copy_monsters src dest start count
     ; Characters are 8 bytes wide
@@ -79,17 +79,28 @@ loop
     mwa #:src tmp_addr1         ; Copy monsters_X address to tmp_addr1 
     mwa #:dest tmp_addr2        ; Copy cur_charset_X address to tmp_addr2
 
-    adw tmp_addr2 #(88 * 8)         ; Move over to location in charset where monsters start
-    adw tmp_addr1 #(:start * 16)    ; Move over to the starting monster location
+    adw tmp_addr2 #(88 * 8)     ; Move over to location in charset where monsters start
     
-    lda #(:count * 16)          ; Start at the correct byte (8 * 2) for the ending monster       
-    tay                         ; Store in Y for looping
+    lda :start
+    asl
+    asl
+    asl
+    asl
+    sta tmp
+    adbw tmp_addr1 tmp           ; Move over to the starting monster location - for 12, tmp_addr1 += 192
     
+    lda :count                   ; Start at the correct byte (8 * 2) for the ending monster       
+    asl
+    asl
+    asl
+    asl
+    tay
+
 loop
     dey                         ; Pre-decrement Y
     lda (tmp_addr1),y           ; Load monster character
     sta (tmp_addr2),y           ; Store monster character into charset
-    cpy #0                      ; Check to see if Y=0
+    cpy #0
     bne loop                    ; Y > 0, so keep looping
 
-    .endm
+.endm
