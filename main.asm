@@ -79,8 +79,8 @@ screen_height 		= 11
 border				= 6
 room_width			= 15
 room_height			= 15
-map_width 			= room_width * 8 + 7 + border * 2
-map_height 			= room_height * 8 + 7 + border * 2
+;map_width 			= room_width * 8 + 7 + border * 2
+;map_height 			= room_height * 8 + 7 + border * 2
 map_room_columns	= 8
 map_room_rows		= 8
 
@@ -162,18 +162,18 @@ gold = $2a
 	setup_pmg()
 
 	; Charset testing
-	; mwa #map map_ptr
-	; mwa #screen screen_ptr
-	; map_width  = 28
-	; map_height = 28
-	; lda #14
-	; sta player_x
-	; sta player_y
+	mwa #map map_ptr
+	mwa #screen screen_ptr
+	map_width  = 28
+	map_height = 28
+	lda #14
+	sta player_x
+	sta player_y
 	lda #1
 	sta no_clip
 
-	new_map()
-	place_monsters #255 num_monsters
+	;new_map()
+	;place_monsters #255 num_monsters
 
 
 
@@ -419,6 +419,8 @@ done
 	fix_color				; Fix the color if needed
 	sta (screen_ptr),y		; Store the left character
 	inc16 screen_ptr		; Advance the screen pointer
+	lda (map_ptr),y			; Load the tile from the map
+	asl						; Multiply by two to get left character
 	add #1					; Add one to get right character
 	fix_color				; Fix the color if needed
 	sta (screen_ptr),y		; Store the right character
