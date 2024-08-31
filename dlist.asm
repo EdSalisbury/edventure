@@ -16,6 +16,14 @@ antic5 = 5	    ; Antic mode 5
 
 	mwa #dlist SDLSTL
 	mwa #dli1 VDSLST
+
+	; Wait until a VBLANK occurs
+	lda RTCLK2
+loop
+	cmp RTCLK2
+	beq loop
+
+
 	lda #NMIEN_VBI | NMIEN_DLI
 	sta NMIEN
 	rts
@@ -30,19 +38,19 @@ dlist
 	
 
 dli1
-	pha
-	lda #1
-	sta WSYNC
-	lda charset_a
-	bne use_charset_b
-	mva #>cur_charset_a CHBASE
-	jmp done
+	pha							; Push A onto the stack
+	lda #1						; WSYNC just needs a non-zero value
+	sta WSYNC					; Store the 1 into WSYNC - This will block while waiting
+	lda charset_a				; See if charset_a is set to 0 or non-zero
+	bne use_charset_b			; If charset_a is 0, zero flag is set, so it will jump to use_charset_b
+	mva #>cur_charset_a CHBASE	; If not, we're using charset A, so copy to CHBASE
+	jmp done					; Skip over use_charset_b
 
 use_charset_b
-	mva #>cur_charset_b CHBASE
+	mva #>cur_charset_b CHBASE  ; We're using charset B, so copy to CHBASE
 
 done
-	mwa #dli2 VDSLST
+	mwa #dli2 VDSLST			
 	pla
 	rti
 
