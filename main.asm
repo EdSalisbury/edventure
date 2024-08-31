@@ -116,6 +116,7 @@ anim_timer			= $c0
 charset_a			= $c1
 num_monsters		= $c2
 starting_monster    = $c3
+no_clip				= $c4
 
 ; Colors
 white = $0a
@@ -160,6 +161,17 @@ gold = $2a
 	load_pmg()
 	setup_pmg()
 
+	; Charset testing
+	; mwa #map map_ptr
+	; mwa #screen screen_ptr
+	; map_width  = 28
+	; map_height = 28
+	; lda #14
+	; sta player_x
+	; sta player_y
+	lda #1
+	sta no_clip
+
 	new_map()
 	place_monsters #255 num_monsters
 
@@ -200,50 +212,62 @@ done
 .proc read_joystick
 	lda STICK0
 	and #stick_up
-	beq move_up
+	beq check_up
 
 	lda STICK0
 	and #stick_down
-	beq move_down
+	beq check_down
 
 	lda STICK0
 	and #stick_left
-	beq move_left
+	beq check_left
 
 	lda STICK0
 	and #stick_right
-	beq move_right
+	beq check_right
 
 	jmp done
 
-move_up
+check_up
+	lda no_clip
+	bne move_up
 	lda up_tile
 	cmp #WALKABLE_START
 	bcc done
+move_up
 	dec player_y
 	update_player_tiles()
 	jmp done
 
-move_down
+check_down
+	lda no_clip
+	bne move_down
 	lda down_tile
 	cmp #WALKABLE_START
 	bcc done
+move_down
 	inc player_y
 	update_player_tiles()
 	jmp done
 
-move_left
+check_left
+	lda no_clip
+	bne move_left
 	lda left_tile
 	cmp #WALKABLE_START
 	bcc done
+move_left
 	dec player_x
 	update_player_tiles()
 	jmp done
 
-move_right
+check_right
+	lda no_clip
+	bne move_right
 	lda right_tile
 	cmp #WALKABLE_START
 	bcc done
+move_right
 	inc player_x
 	update_player_tiles()
 	jmp done
@@ -789,6 +813,7 @@ place
 	.endp
 
 
+	icl 'test_map.asm'
 	icl 'macros.asm'
 	icl 'hardware.asm'
 	icl 'labels.asm'
