@@ -144,7 +144,7 @@ gold = $2a
 	mva #201 rand16
 
 	mva #12 num_monsters
-	mva #16 starting_monster
+	mva #15 starting_monster
 
 	mwa #powers_of_two pow2_ptr
 	mwa #occupied_rooms occupied_rooms_ptr
@@ -153,8 +153,8 @@ gold = $2a
 	copy_data charset_dungeon_b cur_charset_b 4
 	copy_bytes charset_dungeon_a_colors cur_char_colors 16
 
-	copy_monsters monsters_a cur_charset_a monsters_a_colors starting_monster num_monsters
-	copy_monsters monsters_b cur_charset_b monsters_b_colors starting_monster num_monsters
+	copy_monsters monsters_a cur_charset_a starting_monster
+	copy_monsters monsters_b cur_charset_b starting_monster
 	copy_monster_colors monsters_a_colors cur_char_colors starting_monster
 	;copy_monster_colors monsters_b cur_char_colors starting_monster
 	
