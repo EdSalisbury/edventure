@@ -55,7 +55,21 @@ for row in range(int(height / tile_height)):
             f.write("\n")
         char += 1
         color_bits += bit
-        if not char % 8:
-            c.write(f"\n\t.byte %{color_bits[::-1]}")
-            color_bits = ""
+        #if not char % 8:
+            #c.write(f"\n\t.byte %{color_bits[::-1]}")
+            #color_bit_list.append(int(color_bits, 2))
+            #color_bits = ""
 f.close()
+
+
+for i in range(0, 17):
+    j = i * 2
+    byte_list = []
+    byte_list.append(color_bits[j:j + 8])
+    byte_list.append(color_bits[j+8:j + 16])
+    byte_list.append(color_bits[j+16:j + 24])
+    
+    for byte in byte_list:
+        c.write(f"\n\t.byte %{byte[::-1]}   ; starting_monster = {i}")
+    
+c.close()

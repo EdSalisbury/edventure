@@ -71,7 +71,28 @@ loop
     bne loop
 .endm
 
-.macro copy_monsters src dest start count
+.macro copy_monster_colors src dest start
+    mwa #:src tmp_addr1
+    mwa #:dest tmp_addr2
+    
+    ; Multiply starting monster by 3 to start on the correct index
+    lda :start
+    asl
+    add :start
+    tay
+
+    lda (tmp_addr1),y
+    sta :dest + 11
+    iny
+    lda (tmp_addr1),y
+    sta :dest + 12
+    iny
+    lda (tmp_addr1),y
+    sta :dest + 13
+
+.endm
+
+.macro copy_monsters src dest colors start count
     ; Characters are 8 bytes wide
     ; Tiles are 2 bytes wide
     ; In the dungeon/outdoor charset, there's an open section starting at character 88

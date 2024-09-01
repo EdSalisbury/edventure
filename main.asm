@@ -49,7 +49,9 @@ room_pos_doors		= $ae90 ; 64 bytes
 room_type_doors		= $aed0 ; 16 bytes
 charset_dungeon_a_colors		= $aee0 ; 16 bytes
 charset_outdoor_colors		= $aef0 ; 16 bytes
-monsters_a_colors		= $af00 ; 16 bytes
+monsters_a_colors		= $af00 ; 51 bytes
+;monsters_b_colors		= $af10 ; 16 bytes
+
 ; free
 
 ; B000-BFFF (Code)
@@ -141,8 +143,8 @@ gold = $2a
 	mva #123 rand
 	mva #201 rand16
 
-	mva #5 num_monsters
-	mva #0 starting_monster
+	mva #12 num_monsters
+	mva #16 starting_monster
 
 	mwa #powers_of_two pow2_ptr
 	mwa #occupied_rooms occupied_rooms_ptr
@@ -151,8 +153,11 @@ gold = $2a
 	copy_data charset_dungeon_b cur_charset_b 4
 	copy_bytes charset_dungeon_a_colors cur_char_colors 16
 
-	copy_monsters monsters_a cur_charset_a starting_monster num_monsters
-	copy_monsters monsters_b cur_charset_b starting_monster num_monsters
+	copy_monsters monsters_a cur_charset_a monsters_a_colors starting_monster num_monsters
+	copy_monsters monsters_b cur_charset_b monsters_b_colors starting_monster num_monsters
+	copy_monster_colors monsters_a_colors cur_char_colors starting_monster
+	;copy_monster_colors monsters_b cur_char_colors starting_monster
+	
 	; TODO: Copy monster colors into correct locations
 
 	setup_colors()
@@ -834,6 +839,11 @@ place
 	icl 'room_type_doors'
 	icl 'charset_dungeon_a_colors.asm'
 	icl 'monsters_a_colors.asm'
+	;icl 'monsters_b_colors.asm'
+	
 
 powers_of_two
 	.byte 1,2,4,8,16,32,64,128
+
+bitmasks
+	.byte $ff, $f7, $f0, $70
