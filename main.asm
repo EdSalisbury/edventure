@@ -25,7 +25,8 @@ placed_doors		= $72e9 ; Doors that have been placed (64 bytes)
 avail_doors			= $7329	; Doors that are available (64 bytes)
 occupied_rooms		= $7369 ; Rooms that are occupied (8 bytes)
 ; free
-cur_char_colors		= $7380 ; Current character colors (16 bytes)
+cur_char_colors_a		= $7380 ; Current character colors (16 bytes)
+cur_char_colors_b		= $7390 ; Current character colors (16 bytes)
 ; free
 pmg     			= $7400 ; Player Missle Data (1K)
 cur_charset_a		= $7800 ; Current character set A (1K)
@@ -42,15 +43,18 @@ charset_outdoor_b 	= $8c00 ; Character Set for outdoors (1K)
 monsters_a          = $9000 ; Monster characters (1K)
 monsters_b          = $9400 ; Monster characters (1K)
 ; free
-dlist				= $9800
+dlist				= $9800 ; 112 Bytes
+; free
 room_types			= $a000 ; 3600 Bytes
 room_positions		= $ae10	; 128 bytes
 room_pos_doors		= $ae90 ; 64 bytes
 room_type_doors		= $aed0 ; 16 bytes
 charset_dungeon_a_colors		= $aee0 ; 16 bytes
-charset_outdoor_colors		= $aef0 ; 16 bytes
-monsters_a_colors		= $af00 ; 51 bytes
-;monsters_b_colors		= $af10 ; 16 bytes
+charset_dungeon_b_colors		= $aef0 ; 16 bytes
+charset_outdoor_a_colors		= $af00 ; 16 bytes
+charset_outdoor_b_colors		= $af10 ; 16 bytes
+monsters_a_colors		= $af20 ; 51 bytes
+monsters_b_colors		= $af53 ; 51 bytes
 
 ; free
 
@@ -81,8 +85,8 @@ screen_height 		= 11
 border				= 6
 room_width			= 15
 room_height			= 15
-;map_width 			= room_width * 8 + 7 + border * 2
-;map_height 			= room_height * 8 + 7 + border * 2
+map_width 			= room_width * 8 + 7 + border * 2
+map_height 			= room_height * 8 + 7 + border * 2
 map_room_columns	= 8
 map_room_rows		= 8
 
@@ -119,6 +123,7 @@ charset_a			= $c1
 num_monsters		= $c2
 starting_monster    = $c3
 no_clip				= $c4
+char_colors_ptr		= $c5 ; 16 bit
 
 ; Colors
 white = $0a
@@ -143,7 +148,7 @@ gold = $2a
 	mva #123 rand
 	mva #201 rand16
 
-	mva #12 num_monsters
+	mva #8 num_monsters
 	mva #15 starting_monster
 
 	mwa #powers_of_two pow2_ptr
@@ -151,14 +156,13 @@ gold = $2a
 
 	copy_data charset_dungeon_a cur_charset_a 4
 	copy_data charset_dungeon_b cur_charset_b 4
-	copy_bytes charset_dungeon_a_colors cur_char_colors 16
-
+	copy_bytes charset_dungeon_a_colors cur_char_colors_a 16
+	copy_bytes charset_dungeon_b_colors cur_char_colors_b 16
+	
 	copy_monsters monsters_a cur_charset_a starting_monster
 	copy_monsters monsters_b cur_charset_b starting_monster
-	copy_monster_colors monsters_a_colors cur_char_colors starting_monster
-	;copy_monster_colors monsters_b cur_char_colors starting_monster
-	
-	; TODO: Copy monster colors into correct locations
+	copy_monster_colors monsters_a_colors cur_char_colors_a starting_monster
+	copy_monster_colors monsters_b_colors cur_char_colors_b starting_monster
 
 	setup_colors()
 	
@@ -167,26 +171,34 @@ gold = $2a
 	setup_pmg()
 
 	; Charset testing
-	mwa #map map_ptr
-	mwa #screen screen_ptr
-	map_width  = 28
-	map_height = 28
-	lda #14
-	sta player_x
-	sta player_y
+	; mwa #map map_ptr
+	; mwa #screen screen_ptr
+	; map_width  = 28
+	; map_height = 28
+	; lda #14
+	; sta player_x
+	; sta player_y
 	lda #1
 	sta no_clip
 
-	;new_map()
-	;place_monsters #255 num_monsters
-
-
+	new_map()
+	place_monsters #255 num_monsters
 
 game
 	mva RTCLK2 clock
 	animate
 	get_input
 	jmp game
+
+.macro set_colors
+	lda charset_a
+	beq use_charset_b
+	mwa #cur_char_colors_b char_colors_ptr
+	jmp done
+use_charset_b
+	mwa #cur_char_colors_a char_colors_ptr
+done
+.endm
 
 .macro get_input
 	lda clock
@@ -387,8 +399,8 @@ loop
 .macro fix_color
 	; A = character index to fix color if needed
 	sta tmp					; Save character to temp var
-	txa						; Copy X to A to be able to push to stack
-	pha						; Push A(X) onto the stack
+	tya
+	pha
 	lda tmp					; Reload the character
 	and #$07				; Get last 3 bits
 	add #1					; Add 1 so that we can shift correct number of times
@@ -397,8 +409,8 @@ loop
 	lsr						; Divide by 8 to get color index
 	lsr						; 
 	lsr						; 
-	tax						; Store into x to be able to use as an offset
-	lda cur_char_colors,X	; Get the color bits for this character
+	tay					; Store into x to be able to use as an offset
+	lda (char_colors_ptr),y	; Get the color bits for this character
 
 shift_bits
 	lsr						; Shift until bit is in the carry flag
@@ -414,7 +426,7 @@ add_color
 
 done
 	pla						; Pull old X from the stack via A
-	tax						; Restore X by copying from A
+	tay
 	lda tmp					; Re-load character to A
 	.endm
 
@@ -838,8 +850,11 @@ place
 	icl 'room_pos_doors'
 	icl 'room_type_doors'
 	icl 'charset_dungeon_a_colors.asm'
+	icl 'charset_dungeon_b_colors.asm'
+	icl 'charset_outdoor_a_colors.asm'
+	icl 'charset_outdoor_b_colors.asm'
 	icl 'monsters_a_colors.asm'
-	;icl 'monsters_b_colors.asm'
+	icl 'monsters_b_colors.asm'
 	
 
 powers_of_two

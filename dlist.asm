@@ -50,7 +50,8 @@ use_charset_b
 	mva #>cur_charset_b CHBASE  ; We're using charset B, so copy to CHBASE
 
 done
-	mwa #dli2 VDSLST			
+	mwa #dli2 VDSLST
+	set_colors			
 	pla
 	rti
 
