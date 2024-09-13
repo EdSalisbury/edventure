@@ -16,6 +16,13 @@ antic5 = 5	    ; Antic mode 5
 
 	mwa #dlist SDLSTL
 	mwa #dli1 VDSLST
+
+	; Wait until the clock changes to set VBI/DLI
+	lda RTCLK2
+loop
+	cmp RTCLK2
+	beq loop
+
 	lda #NMIEN_VBI | NMIEN_DLI
 	sta NMIEN
 	rts
@@ -43,6 +50,7 @@ use_charset_b
 
 done
 	mwa #dli2 VDSLST
+	set_colors
 	pla
 	rti
 

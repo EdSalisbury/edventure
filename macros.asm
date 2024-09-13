@@ -3,7 +3,7 @@
     bne skip_carry
     inc :addr + 1
 skip_carry
-    .endm
+.endm
 
 .macro dec16 addr
     lda :addr
@@ -11,7 +11,7 @@ skip_carry
     dec :addr + 1
 skip_borrow
     dec :addr
-    .endm
+.endm
 
 .macro adbw src val
     lda :src
@@ -20,7 +20,7 @@ skip_borrow
     bcc skip_carry
     inc :src + 1
 skip_carry
-    .endm
+.endm
 
 .macro advance_ptr data ptr width count offset
     mwa :data :ptr
@@ -36,7 +36,21 @@ loop
 
 done
     adbw :ptr :offset
-    .endm
+.endm
+
+.macro copy_bytes src dest num_bytes
+    mwa #:src tmp_addr1
+    mwa #:dest tmp_addr2
+
+    ldy #0
+loop
+    lda (tmp_addr1),y
+    sta (tmp_addr2),y
+    iny
+    cpy #:num_bytes
+    bne loop
+
+.endm
 
 .macro copy_data src dest num_pages
     mwa #:src tmp_addr1
@@ -54,31 +68,57 @@ loop
     inx
     cpx #:num_pages
     bne loop
-    .endm
+.endm
 
-.macro copy_monsters src dest start end
+.macro copy_monster_colors src dest start
+    mwa #:src tmp_addr1
+
+    lda :start
+    asl
+    add :start
+    tay
+
+    lda (tmp_addr1),y
+    sta :dest + 11
+    iny
+    lda (tmp_addr1),y
+    sta :dest + 12
+    iny
+    lda (tmp_addr1),y
+    sta :dest + 13
+.endm
+
+
+.macro copy_monsters src dest start
+    ; Characters are 8 bytes wide
+    ; Tiles are 2 chacters wide
+    ; In the dungeon/outdoor charset, there's an open section starting at character 88
     mwa #:src tmp_addr1
     mwa #:dest tmp_addr2
 
-    adw tmp_addr2 #(86 * 8)
+    adw tmp_addr2 #(88 * 8)
 
-    lda #:start
-    asl
-    tay
-
-    lda #:end
+    lda :start
+    cmp #16
+    bne shift
+    adw tmp_addr1 #256
+    jmp done
+shift
     asl
     asl
     asl
     asl
     sta tmp
+    adbw tmp_addr1 tmp
 
+done
+    ldy #0
 loop
     lda (tmp_addr1),y
     sta (tmp_addr2),y
     iny
 
-    cpy tmp
+    cpy #192
     bne loop
 
-    .endm
+.endm

@@ -11,7 +11,7 @@
 ; ATASCII 96-127 Screen code 96-127
 
 ; NTSC Color Palette: https://atariage.com/forums/uploads/monthly_10_2015/post-6369-0-47505700-1443889945.png
-; PAL Color Palette: https://atariage.com/forums/uploads/monthly_10_2015/post-6369-0-90255700-1443889950.png
+; PAL Color Palette: https://atariage.com/forums/uploads/monthly_10_2015/post-6369-0-902WALKABLE_START700-1443889950.png
 ; PMG Memory Map: https://www.atarimagazines.com/compute/issue64/atari_animation.gif
 
 	org $b000
@@ -25,6 +25,10 @@ placed_doors		= $72e9 ; Doors that have been placed (64 bytes)
 avail_doors			= $7329	; Doors that are available (64 bytes)
 occupied_rooms		= $7369 ; Rooms that are occupied (8 bytes)
 ; free
+cur_char_colors_a	= $7380 ; 16 bytes
+cur_char_colors_b	= $7390	; 16 bytes
+; free
+
 pmg     			= $7400 ; Player Missle Data (1K)
 cur_charset_a		= $7800 ; Current character set A (1K)
 cur_charset_b		= $7c00 ; Current character set B (1K)
@@ -46,6 +50,12 @@ room_types			= $a000 ; 3600 Bytes
 room_positions		= $ae10	; 128 bytes
 room_pos_doors		= $ae90 ; 64 bytes
 room_type_doors		= $aed0 ; 16 bytes
+charset_dungeon_a_colors = $aee0 ; 16 bytes
+charset_dungeon_b_colors = $aef0 ; 16 bytes
+charset_outdoor_a_colors = $af00 ; 16 bytes
+charset_outdoor_b_colors = $af10 ; 16 bytes
+monsters_a_colors   = $af20 ; 51 bytes
+monsters_b_colors   = $af53 ; 51 bytes
 
 ; free
 
@@ -111,6 +121,10 @@ rand16				= $be
 clock				= $bf
 anim_timer			= $c0
 charset_a			= $c1
+num_monsters		= $c2
+starting_monster	= $c3
+no_clip				= $c4
+char_colors_ptr		= $c5 ; 16 bit
 
 ; Colors
 white = $0a
@@ -119,6 +133,19 @@ black = $00
 peach = $2c
 blue = $92
 gold = $2a
+
+	setup_screen()
+	update_player_tiles()
+	display_borders()
+	update_ui()
+	setup_colors()
+	mva #>charset_outdoor_a CHBAS
+	clear_pmg()
+	load_pmg()
+	setup_pmg()
+
+	mva #16 starting_monster
+	mva #8 num_monsters
 
 	lda #16
 	sta player_x
@@ -132,28 +159,49 @@ gold = $2a
 
 	copy_data charset_dungeon_a cur_charset_a 4
 	copy_data charset_dungeon_b cur_charset_b 4
-	copy_monsters monsters_a cur_charset_a 0 12
-	copy_monsters monsters_b cur_charset_b 0 12
-
-	setup_colors()
-	mva #>charset_outdoor_a CHBAS
-	clear_pmg()
-	load_pmg()
-	setup_pmg()
+	copy_bytes charset_dungeon_a_colors cur_char_colors_a 16
+	copy_bytes charset_dungeon_b_colors cur_char_colors_b 16
+	copy_monsters monsters_a cur_charset_a starting_monster
+	copy_monsters monsters_b cur_charset_b starting_monster
+	copy_monster_colors monsters_a_colors cur_char_colors_a starting_monster
+	copy_monster_colors monsters_b_colors cur_char_colors_b starting_monster
 
 	new_map()
-	place_monsters #255 #12
+	place_monsters #255 num_monsters
 
-	setup_screen()
-	update_player_tiles()
-	display_borders()
-	update_ui()
+
+	
+
+	; mwa #map map_ptr
+	; mwa #screen screen_ptr
+	; map_width = 28
+	; map_height = 28
+	; lda #14
+	; sta player_x
+	; sta player_y
+	lda #1
+	sta no_clip
+
+
+
+
 
 game
 	mva RTCLK2 clock
 	animate
 	get_input
 	jmp game
+
+.macro set_colors
+	lda charset_a
+	beq use_charset_a
+	mwa #cur_char_colors_b char_colors_ptr
+	jmp done
+use_charset_a
+	mwa #cur_char_colors_a char_colors_ptr
+done
+.endm
+
 
 .macro get_input
 	lda clock
@@ -174,6 +222,7 @@ done
 	lda charset_a
 	eor #$ff
 	sta charset_a
+	;set_colors
 	blit_screen
 	lda clock
 	add #anim_speed
@@ -184,50 +233,62 @@ done
 .proc read_joystick
 	lda STICK0
 	and #stick_up
-	beq move_up
+	beq check_up
 
 	lda STICK0
 	and #stick_down
-	beq move_down
+	beq check_down
 
 	lda STICK0
 	and #stick_left
-	beq move_left
+	beq check_left
 
 	lda STICK0
 	and #stick_right
-	beq move_right
+	beq check_right
 
 	jmp done
 
-move_up
+check_up
+	lda no_clip
+	bne move_up
 	lda up_tile
-	cmp #55
+	cmp #WALKABLE_START
 	bcc done
+move_up
 	dec player_y
 	update_player_tiles()
 	jmp done
 
-move_down
+check_down
+	lda no_clip
+	bne move_down
 	lda down_tile
-	cmp #55
+	cmp #WALKABLE_START
 	bcc done
+move_down
 	inc player_y
 	update_player_tiles()
 	jmp done
 
-move_left
+check_left
+	lda no_clip
+	bne move_left
 	lda left_tile
-	cmp #55
+	cmp #WALKABLE_START
 	bcc done
+move_left
 	dec player_x
 	update_player_tiles()
 	jmp done
 
-move_right
+check_right
+	lda no_clip
+	bne move_right
 	lda right_tile
-	cmp #55
+	cmp #WALKABLE_START
 	bcc done
+move_right
 	inc player_x
 	update_player_tiles()
 	jmp done
@@ -335,12 +396,57 @@ loop
 	rts
 	.endp
 
+.macro fix_color
+	; Save Y register
+	sta tmp
+	tya
+	pha
+	lda tmp
+
+	; Get number of LSRs to perform (how many times to shift)
+	and #$07
+	add #1
+	sta tmp2
+	
+	; Get color index
+	lda tmp
+	lsr
+	lsr
+	lsr
+	tay
+	lda (char_colors_ptr),y
+
+	; Shift right as necessary to put the desired bit into the carry flag
+shift_bits
+	lsr
+	dec tmp2
+	bne shift_bits
+
+	; Check the carry flag to see if it has a 1 - if so, it needs to be yellow, otherwise blue
+	bcc done
+
+add_color
+	lda tmp
+	add #128
+	sta tmp
+
+done
+	; Restore the Y register
+	pla
+	tay
+	lda tmp
+.endm
+
 .macro blit_tile
 	lda (map_ptr),y			; Load the tile from the map
 	asl						; Multiply by two to get left character
+	fix_color
 	sta (screen_ptr),y		; Store the left character
 	inc16 screen_ptr		; Advance the screen pointer
-	add #1					; Add one to get right character
+	lda (map_ptr),y
+	asl
+	add #1
+	fix_color				; Add one to get right character
 	sta (screen_ptr),y		; Store the right character
 	adw map_ptr #1			; Advance the map pointer
 	adw screen_ptr #1		; Advance the screen pointer	
@@ -699,7 +805,7 @@ pick
 	cmp tmp2
 	bcs pick
 
-	add #43
+	add #44
 	sta tmp
 
 place
@@ -737,12 +843,19 @@ place
 	icl 'charset_dungeon_a.asm'
 	icl 'charset_dungeon_b.asm'
 	icl 'charset_outdoor_a.asm'
+	icl 'charset_outdoor_b.asm'
 	icl 'monsters_a.asm'
 	icl 'monsters_b.asm'
 	icl 'room_types.asm'
 	icl 'room_positions.asm'
 	icl 'room_pos_doors'
 	icl 'room_type_doors'
-
+	;icl 'test_map.asm'
+	icl 'charset_dungeon_a_colors.asm'
+	icl 'charset_dungeon_b_colors.asm'
+	icl 'charset_outdoor_a_colors.asm'
+	icl 'charset_outdoor_b_colors.asm'
+	icl 'monsters_a_colors.asm'
+	icl 'monsters_b_colors.asm'
 powers_of_two
 	.byte 1,2,4,8,16,32,64,128
