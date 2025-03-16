@@ -179,7 +179,7 @@ gold = $2a
 	; lda #14
 	; sta player_x
 	; sta player_y
-	lda #1
+	lda #0
 	sta no_clip
 
 
