@@ -71,11 +71,6 @@ screen_ptr 	= $94
 player_x	= $96
 player_y	= $97
 tmp			= $98
-up_tile		= $9a
-down_tile	= $9b
-left_tile	= $9c
-right_tile	= $9d
-on_tile		= $9e
 
 tmp_addr1	= $a0
 tmp_addr2   = $a2
@@ -125,6 +120,11 @@ num_monsters		= $c2
 starting_monster	= $c3
 no_clip				= $c4
 char_colors_ptr		= $c5 ; 16 bit
+on_tile_ptr         = $c7
+up_tile_ptr         = $c9
+left_tile_ptr       = $d0
+right_tile_ptr      = $cc
+down_tile_ptr       = $ce
 
 ; Colors
 white = $0a
@@ -135,7 +135,7 @@ blue = $92
 gold = $2a
 
 	setup_screen()
-	update_player_tiles()
+	;update_player_tile_pointers()
 	display_borders()
 	update_ui()
 	setup_colors()
@@ -169,8 +169,12 @@ gold = $2a
 	new_map()
 	place_monsters #255 num_monsters
 
-
-	
+	mwa #0 on_tile_ptr
+	mwa #0 left_tile_ptr
+	mwa #0 right_tile_ptr
+	mwa #0 up_tile_ptr
+	mwa #0 down_tile_ptr
+	update_player_tile_pointers()
 
 	; mwa #map map_ptr
 	; mwa #screen screen_ptr
@@ -231,67 +235,112 @@ done
 	.endm
 
 .proc read_joystick
-	lda STICK0
-	and #stick_up
-	beq check_up
+	lda STICK0						; Read the joystick direction
+	sta tmp							; Store it in a temp variable
+	and #stick_up					; See if it's pointing up
+	beq try_up						; Deal with up input
 
-	lda STICK0
-	and #stick_down
-	beq check_down
+	lda tmp							; Re-read the joystick direction (AND overwrites it)
+	and #stick_down					; See if it's pointing down
+	beq try_down					; Deal with down input
 
-	lda STICK0
-	and #stick_left
-	beq check_left
+	lda tmp 						; Re-read the joystick direction (AND overwrites it)
+	and #stick_left					; See if it's pointing left
+	beq try_left					; Deal with left input
 
-	lda STICK0
-	and #stick_right
-	beq check_right
+	lda tmp						    ; Re-read the joystick direction (AND overwrites it)
+	and #stick_right				; See if it's pointing right
+	beq try_right					; Deal with right input
 
-	jmp done
+	rts								; No input, we're done
 
-check_up
-	lda no_clip
-	bne move_up
-	lda up_tile
-	cmp #WALKABLE_START
-	bcc done
-move_up
-	dec player_y
-	update_player_tiles()
-	jmp done
+try_up
+	lda STRIG0						; Read in the joystick button
+	beq action_up				    ; If it's 0, it's pressed, skip to action
+	lda no_clip						; Check for collision detection flag
+	bne move_up					    ; If CD is turned off, move up
+	ldy #0							; Get the tile above the player
+	lda (up_tile_ptr),y		
+	cmp #WALKABLE_START     		; Verify that it's walkable
+	bcc done					    ; Not walkable? We're done
+move_up		
+	dec player_y					; Move the player up
+	update_player_tile_pointers()   ; Update the pointers
+	rts								; Done updating
+action_up
+	ldy #0							; Get the tile above
+	lda (up_tile_ptr),y
+	cmp #MAP_DOOR    				; Check to see if it's a door
+	bne done         				; It's not, so skip ahead
+	lda #MAP_DOORWAY 				; It is, so change to a doorway
+	sta (up_tile_ptr),y  		    ; Change the door to a doorway
+	rts								; Done updating
 
-check_down
-	lda no_clip
-	bne move_down
-	lda down_tile
-	cmp #WALKABLE_START
-	bcc done
-move_down
-	inc player_y
-	update_player_tiles()
-	jmp done
+try_down
+	lda STRIG0						; Read in the joystick button
+	beq action_down				    ; If it's 0, it's pressed, skip to action
+	lda no_clip						; Check for collision detection flag
+	bne move_down					; If CD is turned off, move down
+	ldy #0							; Get the tile below the player
+	lda (down_tile_ptr),y		
+	cmp #WALKABLE_START     		; Verify that it's walkable
+	bcc done 						; Not walkable? We're done
+move_down		
+	inc player_y					; Move the player down
+	update_player_tile_pointers()   ; Update the pointers
+	rts								; Done updating
+action_down
+	ldy #0							; Get the tile below
+	lda (down_tile_ptr),y
+	cmp #MAP_DOOR    				; Check to see if it's a door
+	bne done          				; It's not, so skip ahead
+	lda #MAP_DOORWAY 				; It is, so change to a doorway
+	sta (down_tile_ptr),y  		    ; Change the door to a doorway
+	rts								; Done updating
 
-check_left
-	lda no_clip
-	bne move_left
-	lda left_tile
-	cmp #WALKABLE_START
-	bcc done
-move_left
-	dec player_x
-	update_player_tiles()
-	jmp done
+try_left
+	lda STRIG0						; Read in the joystick button
+	beq action_left				    ; If it's 0, it's pressed, skip to action
+	lda no_clip						; Check for collision detection flag
+	bne move_left					; If CD is turned off, move to the left
+	ldy #0							; Get the tile to the left of the player
+	lda (left_tile_ptr),y		
+	cmp #WALKABLE_START     		; Verify that it's walkable
+	bcc done 						; Not walkable? We're done
+move_left		
+	dec player_x					; Move the player to the left
+	update_player_tile_pointers()   ; Update the pointers
+	rts								; Done updating
+action_left
+	ldy #0							; Get the tile to the left
+	lda (left_tile_ptr),y
+	cmp #MAP_DOOR    				; Check to see if it's a door
+	bne done         				; It's not, so skip ahead
+	lda #MAP_DOORWAY 				; It is, so change to a doorway
+	sta (left_tile_ptr),y  		    ; Change the door to a doorway
+	rts								; Done updating
 
-check_right
-	lda no_clip
-	bne move_right
-	lda right_tile
-	cmp #WALKABLE_START
-	bcc done
-move_right
-	inc player_x
-	update_player_tiles()
-	jmp done
+try_right
+	lda STRIG0						; Read in the joystick button
+	beq action_right				; If it's 0, it's pressed, skip to action
+	lda no_clip						; Check for collision detection flag
+	bne move_right					; If CD is turned off, move to the right
+	ldy #0							; Get the tile to the right of the player
+	lda (right_tile_ptr),y		
+	cmp #WALKABLE_START     		; Verify that it's walkable
+	bcc done		   			    ; Not walkable? We're done
+move_right		
+	inc player_x					; Move the player to the right
+	update_player_tile_pointers()   ; Update the pointers
+	rts								; Done updating
+action_right
+	ldy #0							; Get the tile to the right
+	lda (right_tile_ptr),y
+	cmp #MAP_DOOR    				; Check to see if it's a door
+	bne done         				; It's not, so skip ahead
+	lda #MAP_DOORWAY 				; It is, so change to a doorway
+	sta (right_tile_ptr),y  		; Change the door to a doorway
+	rts								; Done updating
 
 done
 	rts
@@ -492,43 +541,39 @@ loop
 	rts
 	.endp
 
-.proc update_player_tiles
+.proc update_player_tile_pointers
 	mwa #map map_ptr
 
+	; Move the map pointer so that it is where the player is on the y-axis
 	ldy player_y
 loop
 	adw map_ptr #map_width
 	dey
 	bne loop
 
+	; Move the map pointer on the x-axis
 	adbw map_ptr player_x
+	
+	; Start on the tile the player is on
+	mwa map_ptr on_tile_ptr
 
-	; Get the tile the player is on
-	ldy #0
-	lda (map_ptr),y
-	sta on_tile
+	; Move left one tile
+	dew map_ptr
+	mwa map_ptr left_tile_ptr
 
-	; Get the tile to the left of the player
-	dec16 map_ptr
-	lda (map_ptr),y
-	sta left_tile
+	; Move right two tiles (to go to the right of the player)
+	inw map_ptr
+	inw map_ptr
+	mwa map_ptr right_tile_ptr
 
-	; Get the tile to the right of the player
-	inc16 map_ptr
-	inc16 map_ptr
-	lda (map_ptr),y
-	sta right_tile
-
-	; Get the tile above the player
-	dec16 map_ptr
+	; Move left one tile and then up one tile
+	dew map_ptr
 	sbw map_ptr #map_width
-	lda (map_ptr),y
-	sta up_tile
+	mwa map_ptr up_tile_ptr
 
-	; Get the tile below the player
+	; Move down two tiles
 	adw map_ptr #(map_width * 2)
-	lda (map_ptr),y
-	sta down_tile
+	mwa map_ptr down_tile_ptr
 
 	rts
 	.endp

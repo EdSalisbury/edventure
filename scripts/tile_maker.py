@@ -37,8 +37,8 @@ basename = os.path.basename(args.image_file).rsplit(".", 1)[0]
 output_filename = basename + ".asm"
 colors_filename = basename + "_colors.asm"
 
-f = open(output_filename, "w")
-c = open(colors_filename, "w")
+f = open(output_filename, "w", newline="\n")
+c = open(colors_filename, "w", newline="\n")
 
 c.write(f"\torg {basename}_colors\n\n")
 
