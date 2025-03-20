@@ -10,10 +10,10 @@ MAP_DOWN                = 120
 MAP_DOOR                = 4
 MAP_DOORWAY             = 59
 
-NORTH                   = 0
-SOUTH                   = 1
-WEST                    = 2
-EAST                    = 3
+NORTH                   = 1
+SOUTH                   = 2
+WEST                    = 3
+EAST                    = 4
 
 UI_VERT_BORDER          = 1
 UI_HORIZ_BORDER         = 4

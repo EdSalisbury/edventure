@@ -74,8 +74,8 @@ tmp			= $98
 
 dir = $98
 
-stick_dir   = $99
-stick_btn   = $9a
+stick_dir   = $d8
+stick_btn   = $d9
 
 tmp_addr1	= $a0
 tmp_addr2   = $a2
@@ -125,13 +125,11 @@ num_monsters		= $c2
 starting_monster	= $c3
 no_clip				= $c4
 char_colors_ptr		= $c5 ; 16 bit
+
 ; $CA is apparently reserved?
-player_ptr           = $cc
-north_tile_ptr       = $ce
-south_tile_ptr       = $d0
-west_tile_ptr        = $d2
-east_tile_ptr        = $d4
-tmp_ptr = $d6
+; $99 as well?
+player_ptr           = $de
+dir_ptr              = $e0
 
 ; Colors
 white = $0a
@@ -153,10 +151,6 @@ gold = $2a
 	mva #16 starting_monster
 	mva #8 num_monsters
 
-	lda #16
-	; TODO: FIX STARTING PLAYER LOCATION
-	sta player_x
-	sta player_y
 
 
 
@@ -185,7 +179,7 @@ gold = $2a
 	; mwa #0 down_tile_ptr
 	; update_player_tile_pointers()
 
-	; mwa #map map_ptr
+	;mwa #map map_ptr
 	; mwa #screen screen_ptr
 	; map_width = 28
 	; map_height = 28
@@ -196,14 +190,31 @@ gold = $2a
 	sta no_clip
 
 
-
-
+	lda #54
+	sta player_x
+	sta player_y
+	
+	init_player_ptr()
+	mwa player_ptr map_ptr
 
 game
 	mva RTCLK2 clock
 	animate
 	get_input
 	jmp game
+
+.proc init_player_ptr
+    mwa #map player_ptr
+    ldy player_y
+loop
+    adw player_ptr #map_width
+    dey
+    bne loop
+    adbw player_ptr player_x
+    rts
+.endp
+
+
 
 .macro set_colors
 	lda charset_a
@@ -414,27 +425,57 @@ loop
 	mwa tmp_addr2 screen_ptr
 	.endm
 
+; .proc map_offset
+; 	mwa #map map_ptr
+; 	mwa #screen screen_ptr
+
+; 	; Shift vertically for player's y position
+; 	lda player_y
+; 	sub #(playfield_height / 2)
+; 	tay
+; loop
+; 	adw map_ptr #map_width
+; 	dey
+; 	bne loop
+
+; 	; Shift horizontally for player's x position
+; 	lda player_x
+; 	sub #(playfield_width / 2)
+; 	sta tmp
+; 	lda #0
+; 	sta tmp + 1
+; 	adw map_ptr tmp
+
+; 	rts
+; 	.endp
+
+; .proc map_offset
+;     ; Start from the player's current pointer
+;     mwa player_ptr map_ptr
+;     mwa #screen screen_ptr
+
+;     ; Shift vertically
+;     ldy #(playfield_height / 2)
+; loop_y
+;     sbw map_ptr #map_width
+;     dey
+;     bne loop_y
+
+;     ; Shift horizontally
+;     ldy #(playfield_width / 2)
+; loop_x
+;     dew map_ptr   ; Move left one tile at a time
+;     dey
+;     bne loop_x
+
+;     rts
+; .endp
+
+
 .proc map_offset
-	mwa #map map_ptr
-	mwa #screen screen_ptr
-
-	; Shift vertically for player's y position
-	lda player_y
-	sub #(playfield_height / 2)
-	tay
-loop
-	adw map_ptr #map_width
-	dey
-	bne loop
-
-	; Shift horizontally for player's x position
-	lda player_x
-	sub #(playfield_width / 2)
-	sta tmp
-	lda #0
-	sta tmp + 1
-	adw map_ptr tmp
-
+	mwa player_ptr map_ptr
+	sbw map_ptr #(playfield_height / 2 * map_width)
+	sbw map_ptr #(playfield_width / 2)
 	rts
 	.endp
 
@@ -627,6 +668,7 @@ loop
 
 
 .proc blit_screen
+	mwa #screen screen_ptr
 	map_offset()
 
 	ldy #0
@@ -739,9 +781,7 @@ place
 	.endp
 
 
-	icl '@call.mac'
-	icl '@pull.mac'
-	icl '@exit.mac'
+
 	icl 'macros.asm'
 	icl 'hardware.asm'
 	icl 'labels.asm'
@@ -767,5 +807,10 @@ place
 	icl 'charset_outdoor_b_colors.asm'
 	icl 'monsters_a_colors.asm'
 	icl 'monsters_b_colors.asm'
+	; icl '@call.mac'
+	; icl '@pull.mac'
+	; icl '@exit.mac'
+
+	
 powers_of_two
 	.byte 1,2,4,8,16,32,64,128

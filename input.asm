@@ -1,105 +1,144 @@
-dir_offsets:
-    .byte 0, -map_width, map_width, -1, 1
-
 .proc read_joystick
-	mva STICK0 stick_dir
-    mva STRIG0 stick_btn
+    ldx STICK0
+    ldy STRIG0
+    mva #0 stick_dir
 
 check_up
-    lda stick_dir
+    txa
     and #STICK_UP
-	beq check_down
+	bne check_down
     mva #NORTH stick_dir
-    
+    jmp check_button
+
 check_down
-    lda stick_dir
+    txa
     and #STICK_DOWN
-	beq check_left
+	bne check_left
     mva #SOUTH stick_dir
+    jmp check_button
 
 check_left
-    lda stick_dir
+    txa
     and #STICK_LEFT
-	beq check_right
+	bne check_right
     mva #WEST stick_dir
+    jmp check_button
 
 check_right
-    lda stick_dir
+    txa
     and #STICK_RIGHT
-	beq process
+	bne check_button
     mva #EAST stick_dir
 
-process
-    lda stick_btn
-    cmp #BUTTON_DOWN
-    beq action
-
-move
-    player_move stick_dir
-    rts
-
+check_button
+    cpy #BUTTON_DOWN
+    bne move
 action
-    mwa player_ptr tmp_ptr
+    player_action()
+    rts
+move
+    player_move()
+    rts
+    .endp
+
+.proc player_action
+    mwa player_ptr dir_ptr
     ldy stick_dir
-    lda dir_offsets,Y
-    sta tmp
-    adbw tmp tmp_ptr
-    
+
+check_north
+    cpy #NORTH
+    bne check_south
+    sbw dir_ptr #map_width
+    jmp get_tile
+check_south
+    cpy #SOUTH
+    bne check_west
+    adw dir_ptr #map_width
+    jmp get_tile
+check_west
+    cpy #WEST
+    bne check_east
+    dec dir_ptr
+    jmp get_tile
+check_east
+    cpy #EAST
+    bne get_tile
+    inc dir_ptr
+get_tile
     ldy #0
-    lda (tmp_ptr),y
+    lda (dir_ptr),y
 check_door
     cmp #MAP_DOOR
     bne check_doorway
-    open_door tmp_ptr
+    open_door()
     rts
 check_doorway
     cmp #MAP_DOORWAY
     bne none
-    close_door tmp_ptr
+    close_door()
     rts
-
 none
     rts
     .endp
 
-.proc player_move(.byte dir) .var
-    mwa player_ptr tmp_ptr
-    ldy dir
-    lda dir_offsets,Y
-    sta tmp
-    adbw tmp tmp_ptr
-    
-    is_passable tmp_ptr
+.proc player_move
+    mwa player_ptr dir_ptr
+    ldy stick_dir
+    cpy #0
+    beq blocked
+check_north
+    cpy #NORTH
+    bne check_south
+    sbw dir_ptr #map_width
+    jmp check_passable
+check_south
+    cpy #SOUTH
+    bne check_west
+    adw dir_ptr #map_width
+    jmp check_passable
+check_west
+    cpy #WEST
+    bne check_east
+    dec dir_ptr
+    jmp check_passable
+check_east
+    cpy #EAST
+    bne check_passable
+    inc dir_ptr
+    jmp check_passable
+check_passable
+    is_passable()
     bcc blocked
-    mwa tmp_ptr player_ptr
+    mwa dir_ptr player_ptr
 blocked
     rts
     .endp
 
-.proc is_passable(.byte map_ptr) .var
+.proc is_passable
     lda no_clip
     bne passable
     ldy #0
-    lda (map_ptr),y
+    lda (dir_ptr),y
     cmp #PASSABLE_MIN
-    bcs passable
-    clc
-    rts
+    bcc blocked
 passable
     sec
     rts
+blocked
+    clc
+    rts
     .endp
 
-.proc open_door(.byte map_ptr) .var
+.proc open_door
     lda #MAP_DOORWAY
     ldy #0
-    sta (map_ptr),y
+    sta (dir_ptr),y
     rts
 .endp
 
-.proc close_door(.byte map_ptr) .var
+.proc close_door
     lda #MAP_DOOR
     ldy #0
-    sta (map_ptr),y
+    sta (dir_ptr),y
     rts
 .endp
