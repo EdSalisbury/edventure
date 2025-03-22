@@ -122,3 +122,37 @@ loop
     bne loop
 
 .endm
+
+.macro phx
+    txa
+    pha
+.endm
+
+.macro plx
+    pla
+    tax
+.endm
+
+.macro phy
+    tya
+    pha
+.endm
+
+.macro ply
+    pla
+    tay
+.endm
+
+.macro ldi addr
+    ldy #0
+    lda (:addr),y
+.endm
+
+.macro sti addr
+    ldy #0
+    sta (:addr),y
+.endm
+
+.macro clr addr
+    mva #0 :addr
+.endm

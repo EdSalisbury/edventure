@@ -72,10 +72,9 @@ player_x	= $96
 player_y	= $97
 tmp			= $98
 
-dir = $98
-
-stick_dir   = $d8
-stick_btn   = $d9
+stick_dir    = $d8
+stick_btn    = $d9
+stick_action = $da
 
 tmp_addr1	= $a0
 tmp_addr2   = $a2
@@ -116,8 +115,8 @@ room_row			= $b7
 pow2_ptr			= $b8 ; 16 bit
 occupied_rooms_ptr  = $ba ; 16 bit
 doors				= $bc
-tmp2				= $bd
-rand16				= $be
+; tmp2				= $bd
+rand16				= $be ; Shouldn't this be 2 bytes???
 clock				= $bf
 anim_timer			= $c0
 charset_a			= $c1
@@ -130,6 +129,8 @@ char_colors_ptr		= $c5 ; 16 bit
 ; $99 as well?
 player_ptr           = $de
 dir_ptr              = $e0
+
+
 
 ; Colors
 white = $0a
@@ -151,9 +152,6 @@ gold = $2a
 	mva #16 starting_monster
 	mva #8 num_monsters
 
-
-
-
 	mva #123 rand
 	mva #201 rand16
 
@@ -172,23 +170,11 @@ gold = $2a
 	new_map()
 	place_monsters #255 num_monsters
 
-	; mwa #0 on_tile_ptr
-	; mwa #0 left_tile_ptr
-	; mwa #0 right_tile_ptr
-	; mwa #0 up_tile_ptr
-	; mwa #0 down_tile_ptr
-	; update_player_tile_pointers()
-
-	;mwa #map map_ptr
-	; mwa #screen screen_ptr
-	; map_width = 28
-	; map_height = 28
-	; lda #14
-	; sta player_x
-	; sta player_y
 	lda #0
 	sta no_clip
 
+	lda #1
+	sta stick_btn
 
 	lda #54
 	sta player_x
@@ -425,60 +411,12 @@ loop
 	mwa tmp_addr2 screen_ptr
 	.endm
 
-; .proc map_offset
-; 	mwa #map map_ptr
-; 	mwa #screen screen_ptr
-
-; 	; Shift vertically for player's y position
-; 	lda player_y
-; 	sub #(playfield_height / 2)
-; 	tay
-; loop
-; 	adw map_ptr #map_width
-; 	dey
-; 	bne loop
-
-; 	; Shift horizontally for player's x position
-; 	lda player_x
-; 	sub #(playfield_width / 2)
-; 	sta tmp
-; 	lda #0
-; 	sta tmp + 1
-; 	adw map_ptr tmp
-
-; 	rts
-; 	.endp
-
-; .proc map_offset
-;     ; Start from the player's current pointer
-;     mwa player_ptr map_ptr
-;     mwa #screen screen_ptr
-
-;     ; Shift vertically
-;     ldy #(playfield_height / 2)
-; loop_y
-;     sbw map_ptr #map_width
-;     dey
-;     bne loop_y
-
-;     ; Shift horizontally
-;     ldy #(playfield_width / 2)
-; loop_x
-;     dew map_ptr   ; Move left one tile at a time
-;     dey
-;     bne loop_x
-
-;     rts
-; .endp
-
-
 .proc map_offset
 	mwa player_ptr map_ptr
 	sbw map_ptr #(playfield_height / 2 * map_width)
 	sbw map_ptr #(playfield_width / 2)
 	rts
 	.endp
-
 
 .macro blit_char char addr pos
 	lda :char
@@ -779,9 +717,8 @@ place
 
 	rts
 	.endp
-
-
-
+	
+	icl "zeropage.asm"
 	icl 'macros.asm'
 	icl 'hardware.asm'
 	icl 'labels.asm'

@@ -1,72 +1,66 @@
 .proc read_joystick
-    ldx STICK0
-    ldy STRIG0
-    mva #0 stick_dir
-
-check_up
-    txa
-    and #STICK_UP
-	bne check_down
-    mva #NORTH stick_dir
-    jmp check_button
-
-check_down
-    txa
-    and #STICK_DOWN
-	bne check_left
-    mva #SOUTH stick_dir
-    jmp check_button
-
-check_left
-    txa
-    and #STICK_LEFT
-	bne check_right
-    mva #WEST stick_dir
-    jmp check_button
-
-check_right
-    txa
-    and #STICK_RIGHT
-	bne check_button
-    mva #EAST stick_dir
-
-check_button
-    cpy #BUTTON_DOWN
-    bne move
-action
-    player_action()
-    rts
-move
-    player_move()
+    ; Temp vars used
+    cur_btn = tmp1          ; Current button state
+    
+    mva STRIG0 cur_btn      ; Get current button state from HW register (1 = up, 0 = down)
+    bne up                  ; If current button state is non-zero, the button is up
+down                        ; The button is currently down
+    lda stick_btn           ; Get the previous button state
+    bne done                ; If previous button state is non-zero and current button state is zero, it was just pushed
+held                        ; The button is held down
+    lda stick_action        ; Get the action state
+    bne done                ; If the action state is non-zero, don't do the action again
+    read_direction()        ; Update the direction pointer
+    player_action()         ; Do the action
+    
+    jmp done                ; Skip to done
+up                          ; The button is currently up
+    read_direction()        ; Update the direction pointer
+    player_move()           ; Move the player
+    clr stick_action        ; If the player is moving, we don't care about the action state so reset it                      
+done
+    mva cur_btn stick_btn   ; Set the stick button for next time
     rts
     .endp
 
-.proc player_action
-    mwa player_ptr dir_ptr
-    ldy stick_dir
+; Get the direction from the joystick and update dir_ptr
+; Does not support diagonal movement, and is processed in the following priority order: UP, DOWN, LEFT, RIGHT
+.proc read_direction
+    ; Temp vars used
+    stick_dir = tmp2            ; Current stick direction
+    
+    ; Init
+    mwa player_ptr dir_ptr      ; Copy the player pointer to the direction ptr as a base
+    mva STICK0 stick_dir        ; Load stick bitmap from HW register
 
-check_north
-    cpy #NORTH
-    bne check_south
-    sbw dir_ptr #map_width
-    jmp get_tile
-check_south
-    cpy #SOUTH
-    bne check_west
-    adw dir_ptr #map_width
-    jmp get_tile
-check_west
-    cpy #WEST
-    bne check_east
-    dec dir_ptr
-    jmp get_tile
-check_east
-    cpy #EAST
-    bne get_tile
-    inc dir_ptr
-get_tile
-    ldy #0
-    lda (dir_ptr),y
+check_up
+    and #STICK_UP               ; Check to see if it's pushed UP
+    bne check_down              ; It's not pushed UP, so move to the next check
+    sbw dir_ptr #map_width      ; It is pushed UP, so move the temp pointer up one line
+    rts                         ; We're done updating the dir pointer (this will take priority)
+check_down
+    lda stick_dir               ; Re-copy non-mutated stick dir to A
+    and #STICK_DOWN             ; Check to see if it's pushed DOWN
+    bne check_left              ; It's not pushed DOWN, so move to the next check
+    adw dir_ptr #map_width      ; It is pushed DOWN, so move the temp pointer down one line
+    rts
+check_left
+    lda stick_dir               ; Re-copy non-mutated stick dir to AA
+    and #STICK_LEFT             ; Check to see if it's pushed LEFT
+    bne check_right             ; It's not pushed LEFT, so move to the next check
+    dec dir_ptr                 ; It is pushed LEFT, so move the temp pointer left one
+check_right
+    lda stick_dir               ; Re-copy non-mutated stick dir to A
+    and #STICK_RIGHT            ; Check to see if it's pushed RIGHT
+    bne done                    ; If not, we're done checking
+    inc dir_ptr                 ; It is pushed RIGHT, so move the temp pointer left one
+done
+    rts
+    .endp
+
+; Player action
+.proc player_action
+    ldi dir_ptr
 check_door
     cmp #MAP_DOOR
     bne check_doorway
@@ -81,31 +75,11 @@ none
     rts
     .endp
 
+; Player Movement
 .proc player_move
-    mwa player_ptr dir_ptr
-    ldy stick_dir
-    cpy #0
+    ldi dir_ptr
     beq blocked
-check_north
-    cpy #NORTH
-    bne check_south
-    sbw dir_ptr #map_width
-    jmp check_passable
-check_south
-    cpy #SOUTH
-    bne check_west
-    adw dir_ptr #map_width
-    jmp check_passable
-check_west
-    cpy #WEST
-    bne check_east
-    dec dir_ptr
-    jmp check_passable
-check_east
-    cpy #EAST
-    bne check_passable
-    inc dir_ptr
-    jmp check_passable
+
 check_passable
     is_passable()
     bcc blocked
@@ -114,11 +88,11 @@ blocked
     rts
     .endp
 
+; Check to see if a tile is passable
 .proc is_passable
     lda no_clip
     bne passable
-    ldy #0
-    lda (dir_ptr),y
+    ldi dir_ptr
     cmp #PASSABLE_MIN
     bcc blocked
 passable
@@ -131,14 +105,14 @@ blocked
 
 .proc open_door
     lda #MAP_DOORWAY
-    ldy #0
-    sta (dir_ptr),y
+    sti dir_ptr
+    inc stick_action        ; Set the action state so that it can't fire off too soon
     rts
 .endp
 
 .proc close_door
     lda #MAP_DOOR
-    ldy #0
-    sta (dir_ptr),y
+    sti dir_ptr
+    inc stick_action        ; Set the action state so that it can't fire off too soon
     rts
 .endp
