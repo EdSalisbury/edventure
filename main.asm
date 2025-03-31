@@ -126,6 +126,12 @@ starting_monster	= $c3
 no_clip				= $c4
 char_colors_ptr		= $c5 ; 16 bit
 
+stick_dir           = $d8
+stick_btn           = $d9
+
+player_ptr			= $de ; 16 bit
+dir_ptr				= $e0 ; 16 bit
+
 ; Colors
 white = $0a
 red = $32
@@ -179,7 +185,7 @@ gold = $2a
 	; lda #14
 	; sta player_x
 	; sta player_y
-	lda #1
+	lda #0
 	sta no_clip
 
 

@@ -122,3 +122,7 @@ loop
     bne loop
 
 .endm
+
+.macro clr var
+    mva #0 :var
+.endm
