@@ -15,7 +15,6 @@
 ; PMG Memory Map: https://www.atarimagazines.com/compute/issue64/atari_animation.gif
 
 	org $b000
-
 ; RAM: $2000-7FFF - 24K
 map     			= $2000 ; Map (16K+)
 screen  			= $7000 ; Screen buffer (480 bytes)
@@ -61,10 +60,10 @@ monsters_b_colors   = $af53 ; 51 bytes
 
 ; B000-BFFF (Code)
 
-stick_up    = %0001
-stick_down  = %0010 
-stick_left  = %0100
-stick_right = %1000
+; stick_up    = %0001
+; stick_down  = %0010 
+; stick_left  = %0100
+; stick_right = %1000
 
 map_ptr 	= $92
 screen_ptr 	= $94
@@ -126,6 +125,18 @@ starting_monster	= $c3
 no_clip				= $c4
 char_colors_ptr		= $c5 ; 16 bit
 
+	
+;stick_dir    = $d8
+stick_btn    = $d9
+stick_action = $da
+
+player_ptr           = $de
+dir_ptr              = $e0
+tmp1 = $e2
+; tmp2 = $e3
+
+
+
 ; Colors
 white = $0a
 red = $32
@@ -133,10 +144,15 @@ black = $00
 peach = $2c
 blue = $92
 gold = $2a
+	
+	mwa #map map_ptr
 
+	debug
 	setup_screen()
-	update_player_tiles()
+	
+	;update_player_tiles()
 	display_borders()
+	
 	update_ui()
 	setup_colors()
 	mva #>charset_outdoor_a CHBAS
@@ -144,18 +160,21 @@ gold = $2a
 	load_pmg()
 	setup_pmg()
 
+
+	
 	mva #16 starting_monster
 	mva #8 num_monsters
 
 	lda #16
 	sta player_x
 	sta player_y
-
+	
 	mva #123 rand
 	mva #201 rand16
-
+	
 	mwa #powers_of_two pow2_ptr
 	mwa #occupied_rooms occupied_rooms_ptr
+	
 
 	copy_data charset_dungeon_a cur_charset_a 4
 	copy_data charset_dungeon_b cur_charset_b 4
@@ -165,26 +184,24 @@ gold = $2a
 	copy_monsters monsters_b cur_charset_b starting_monster
 	copy_monster_colors monsters_a_colors cur_char_colors_a starting_monster
 	copy_monster_colors monsters_b_colors cur_char_colors_b starting_monster
-
-	new_map()
-	place_monsters #255 num_monsters
-
-
 	
 
-	; mwa #map map_ptr
-	; mwa #screen screen_ptr
+	new_map()
+	
+	place_monsters #255 num_monsters
+	
+	
+	;mwa #map map_ptr
+	;mwa #screen screen_ptr
 	; map_width = 28
 	; map_height = 28
 	; lda #14
 	; sta player_x
 	; sta player_y
-	lda #1
+	lda #0
 	sta no_clip
-
-
-
-
+	
+	init_player_ptr()
 
 game
 	mva RTCLK2 clock
@@ -230,72 +247,72 @@ done
 done
 	.endm
 
-.proc read_joystick
-	lda STICK0
-	and #stick_up
-	beq check_up
+; .proc read_joystick
+; 	lda STICK0
+; 	and #stick_up
+; 	beq check_up
 
-	lda STICK0
-	and #stick_down
-	beq check_down
+; 	lda STICK0
+; 	and #stick_down
+; 	beq check_down
 
-	lda STICK0
-	and #stick_left
-	beq check_left
+; 	lda STICK0
+; 	and #stick_left
+; 	beq check_left
 
-	lda STICK0
-	and #stick_right
-	beq check_right
+; 	lda STICK0
+; 	and #stick_right
+; 	beq check_right
 
-	jmp done
+; 	jmp done
 
-check_up
-	lda no_clip
-	bne move_up
-	lda up_tile
-	cmp #WALKABLE_START
-	bcc done
-move_up
-	dec player_y
-	update_player_tiles()
-	jmp done
+; check_up
+; 	lda no_clip
+; 	bne move_up
+; 	lda up_tile
+; 	cmp #WALKABLE_START
+; 	bcc done
+; move_up
+; 	dec player_y
+; 	update_player_tiles()
+; 	jmp done
 
-check_down
-	lda no_clip
-	bne move_down
-	lda down_tile
-	cmp #WALKABLE_START
-	bcc done
-move_down
-	inc player_y
-	update_player_tiles()
-	jmp done
+; check_down
+; 	lda no_clip
+; 	bne move_down
+; 	lda down_tile
+; 	cmp #WALKABLE_START
+; 	bcc done
+; move_down
+; 	inc player_y
+; 	update_player_tiles()
+; 	jmp done
 
-check_left
-	lda no_clip
-	bne move_left
-	lda left_tile
-	cmp #WALKABLE_START
-	bcc done
-move_left
-	dec player_x
-	update_player_tiles()
-	jmp done
+; check_left
+; 	lda no_clip
+; 	bne move_left
+; 	lda left_tile
+; 	cmp #WALKABLE_START
+; 	bcc done
+; move_left
+; 	dec player_x
+; 	update_player_tiles()
+; 	jmp done
 
-check_right
-	lda no_clip
-	bne move_right
-	lda right_tile
-	cmp #WALKABLE_START
-	bcc done
-move_right
-	inc player_x
-	update_player_tiles()
-	jmp done
+; check_right
+; 	lda no_clip
+; 	bne move_right
+; 	lda right_tile
+; 	cmp #WALKABLE_START
+; 	bcc done
+; move_right
+; 	inc player_x
+; 	update_player_tiles()
+; 	jmp done
 
-done
-	rts
-	.endp
+; done
+; 	rts
+; 	.endp
 
 * --------------------------------------- *
 * Proc: delay                             *
@@ -468,70 +485,94 @@ loop
 	mwa tmp_addr2 screen_ptr
 	.endm
 
+.proc init_player_ptr
+	mwa #map map_ptr
+	mwa map_ptr player_ptr			; Copy the map address to the player pointer
+
+	; Shift player_y rows
+    ldy player_y				; Load in Y starting location (number of rows)
+loop
+    adw player_ptr #map_width	; Add a row
+    dey
+    bne loop					; Keep going
+    
+	; Shift player_x columns
+	adbw player_ptr player_x	; Add player_x number of columns
+    rts
+.endp
+
 .proc map_offset
-	mwa #map map_ptr
 	mwa #screen screen_ptr
-
-	; Shift vertically for player's y position
-	lda player_y
-	sub #(playfield_height / 2)
-	tay
-loop
-	adw map_ptr #map_width
-	dey
-	bne loop
-
-	; Shift horizontally for player's x position
-	lda player_x
-	sub #(playfield_width / 2)
-	sta tmp
-	lda #0
-	sta tmp + 1
-	adw map_ptr tmp
-
+	mwa player_ptr map_ptr								; Copy player location to map location
+	sbw map_ptr #(playfield_height / 2 * map_width)		; Subtract height
+	sbw map_ptr #(playfield_width / 2)					; Subtract width
 	rts
 	.endp
 
-.proc update_player_tiles
-	mwa #map map_ptr
+; .proc map_offset
+; 	mwa #map map_ptr
+; 	mwa #screen screen_ptr
 
-	ldy player_y
-loop
-	adw map_ptr #map_width
-	dey
-	bne loop
+; 	; Shift vertically for player's y position
+; 	lda player_y
+; 	sub #(playfield_height / 2)
+; 	tay
+; loop
+; 	adw map_ptr #map_width
+; 	dey
+; 	bne loop
 
-	adbw map_ptr player_x
+; 	; Shift horizontally for player's x position
+; 	lda player_x
+; 	sub #(playfield_width / 2)
+; 	sta tmp
+; 	lda #0
+; 	sta tmp + 1
+; 	adw map_ptr tmp
 
-	; Get the tile the player is on
-	ldy #0
-	lda (map_ptr),y
-	sta on_tile
+; 	rts
+; 	.endp
 
-	; Get the tile to the left of the player
-	dec16 map_ptr
-	lda (map_ptr),y
-	sta left_tile
+; .proc update_player_tiles
+; 	mwa #map map_ptr
 
-	; Get the tile to the right of the player
-	inc16 map_ptr
-	inc16 map_ptr
-	lda (map_ptr),y
-	sta right_tile
+; 	ldy player_y
+; loop
+; 	adw map_ptr #map_width
+; 	dey
+; 	bne loop
 
-	; Get the tile above the player
-	dec16 map_ptr
-	sbw map_ptr #map_width
-	lda (map_ptr),y
-	sta up_tile
+; 	adbw map_ptr player_x
 
-	; Get the tile below the player
-	adw map_ptr #(map_width * 2)
-	lda (map_ptr),y
-	sta down_tile
+; 	; Get the tile the player is on
+; 	ldy #0
+; 	lda (map_ptr),y
+; 	sta on_tile
 
-	rts
-	.endp
+; 	; Get the tile to the left of the player
+; 	dec16 map_ptr
+; 	lda (map_ptr),y
+; 	sta left_tile
+
+; 	; Get the tile to the right of the player
+; 	inc16 map_ptr
+; 	inc16 map_ptr
+; 	lda (map_ptr),y
+; 	sta right_tile
+
+; 	; Get the tile above the player
+; 	dec16 map_ptr
+; 	sbw map_ptr #map_width
+; 	lda (map_ptr),y
+; 	sta up_tile
+
+; 	; Get the tile below the player
+; 	adw map_ptr #(map_width * 2)
+; 	lda (map_ptr),y
+; 	sta down_tile
+
+; 	rts
+; 	.endp
 
 .macro blit_char char addr pos
 	lda :char
@@ -839,6 +880,7 @@ place
 	icl 'dlist.asm'
 	icl 'pmgdata.asm'
 	icl 'map_gen.asm'
+	icl 'input.asm'
 
 	icl 'charset_dungeon_a.asm'
 	icl 'charset_dungeon_b.asm'
@@ -859,3 +901,4 @@ place
 	icl 'monsters_b_colors.asm'
 powers_of_two
 	.byte 1,2,4,8,16,32,64,128
+	

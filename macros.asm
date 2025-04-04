@@ -122,3 +122,29 @@ loop
     bne loop
 
 .endm
+
+
+.macro ldi addr
+    ldy #0
+    lda (:addr),y
+.endm
+
+.macro sti addr
+    ldy #0
+    sta (:addr),y
+.endm
+
+.macro clr addr
+    mva #0 :addr
+.endm
+
+.macro debug
+	;##TRACE "\nDEBUG:\n"
+    ;##TRACE "player_x (0x%02X): 0x%02X (%03d)            player_y (0x%02X): 0x%02X (%03d)            player_ptr (0x%04X): 0x%04X (%05d)    map_ptr (0x%04X): 0x%04X (%05d)" player_x db(player_x) db(player_x) player_y db(player_y) db(player_y) player_ptr dw(player_ptr) dw(player_ptr) map_ptr dw(map_ptr) dw(map_ptr)
+	;##TRACE "screen_ptr (0x%04X): 0x%04X (%05d)    status_ptr (0x%04X): 0x%04X (%05d)    input_timer (0x%02X): 0x%02X (%03d)         stick_btn (0x%02X): 0x%02X (%03d)" screen_ptr dw(screen_ptr) dw(screen_ptr) status_ptr dw(status_ptr) dw(status_ptr) input_timer db(input_timer) db(input_timer) stick_btn db(stick_btn) db(stick_btn)
+	;##TRACE "stick_action (0x%02X): 0x%02X (%03d)        tmp (0x%02X): 0x%02X (%03d)                 tmp1 (0x%02X): 0x%02X (%03d)                tmp2 (0x%02X): 0x%02X (%03d)" stick_action db(stick_action) db(stick_action) tmp db(tmp) db(tmp) tmp1 db(tmp1) db(tmp1) tmp2 db(tmp2) db(tmp2)
+	;##TRACE "tmp_x (0x%02X): 0x%02X (%03d)               tmp_y (0x%02X): 0x%02X (%03d)               rand (0x%02X): 0x%02X (%03d)                rand16 (0x%04X): 0x%04X (%05d)" tmp_x db(tmp_x) db(tmp_x) tmp_y db(tmp_y) db(tmp_y) rand db(rand) db(rand) rand16 dw(rand16) dw(rand16)
+	;##TRACE "anim_timer (0x%02X): 0x%02X (%03d)          charset_a (0x%02X): 0x%02X (%03d)           no_clip (0x%02X): 0x%02X (%03d)             char_colors_ptr (0x%04X): 0x%04X (%05d)" anim_timer db(anim_timer) db(anim_timer) charset_a db(charset_a) db(charset_a) no_clip db(no_clip) db(no_clip) char_colors_ptr dw(char_colors_ptr) dw(char_colors_ptr)
+	;##TRACE "room_ptr (0x%04X): 0x%04X (%05d)      room_col (0x%02X): 0x%02X (%03d)            room_row (0x%02X): 0x%02X (%03d)            doors (0x%02X): 0x%02X (%03d)" room_ptr dw(room_ptr) dw(room_ptr) room_col db(room_col) db(room_col) room_row db(room_row) db(room_row) doors db(doors) db(doors)
+	;jmp $FFFF
+.endm
