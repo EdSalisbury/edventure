@@ -174,7 +174,6 @@ gold = $2a
 	
 	mwa #powers_of_two pow2_ptr
 	mwa #occupied_rooms occupied_rooms_ptr
-	
 
 	copy_data charset_dungeon_a cur_charset_a 4
 	copy_data charset_dungeon_b cur_charset_b 4
@@ -185,19 +184,11 @@ gold = $2a
 	copy_monster_colors monsters_a_colors cur_char_colors_a starting_monster
 	copy_monster_colors monsters_b_colors cur_char_colors_b starting_monster
 	
-
 	new_map()
 	
 	place_monsters #255 num_monsters
 	
-	
-	;mwa #map map_ptr
-	;mwa #screen screen_ptr
-	; map_width = 28
-	; map_height = 28
-	; lda #14
-	; sta player_x
-	; sta player_y
+
 	lda #0
 	sta no_clip
 	
@@ -246,73 +237,6 @@ done
 	sta anim_timer
 done
 	.endm
-
-; .proc read_joystick
-; 	lda STICK0
-; 	and #stick_up
-; 	beq check_up
-
-; 	lda STICK0
-; 	and #stick_down
-; 	beq check_down
-
-; 	lda STICK0
-; 	and #stick_left
-; 	beq check_left
-
-; 	lda STICK0
-; 	and #stick_right
-; 	beq check_right
-
-; 	jmp done
-
-; check_up
-; 	lda no_clip
-; 	bne move_up
-; 	lda up_tile
-; 	cmp #WALKABLE_START
-; 	bcc done
-; move_up
-; 	dec player_y
-; 	update_player_tiles()
-; 	jmp done
-
-; check_down
-; 	lda no_clip
-; 	bne move_down
-; 	lda down_tile
-; 	cmp #WALKABLE_START
-; 	bcc done
-; move_down
-; 	inc player_y
-; 	update_player_tiles()
-; 	jmp done
-
-; check_left
-; 	lda no_clip
-; 	bne move_left
-; 	lda left_tile
-; 	cmp #WALKABLE_START
-; 	bcc done
-; move_left
-; 	dec player_x
-; 	update_player_tiles()
-; 	jmp done
-
-; check_right
-; 	lda no_clip
-; 	bne move_right
-; 	lda right_tile
-; 	cmp #WALKABLE_START
-; 	bcc done
-; move_right
-; 	inc player_x
-; 	update_player_tiles()
-; 	jmp done
-
-; done
-; 	rts
-; 	.endp
 
 * --------------------------------------- *
 * Proc: delay                             *
@@ -508,71 +432,6 @@ loop
 	sbw map_ptr #(playfield_width / 2)					; Subtract width
 	rts
 	.endp
-
-; .proc map_offset
-; 	mwa #map map_ptr
-; 	mwa #screen screen_ptr
-
-; 	; Shift vertically for player's y position
-; 	lda player_y
-; 	sub #(playfield_height / 2)
-; 	tay
-; loop
-; 	adw map_ptr #map_width
-; 	dey
-; 	bne loop
-
-; 	; Shift horizontally for player's x position
-; 	lda player_x
-; 	sub #(playfield_width / 2)
-; 	sta tmp
-; 	lda #0
-; 	sta tmp + 1
-; 	adw map_ptr tmp
-
-; 	rts
-; 	.endp
-
-; .proc update_player_tiles
-; 	mwa #map map_ptr
-
-; 	ldy player_y
-; loop
-; 	adw map_ptr #map_width
-; 	dey
-; 	bne loop
-
-; 	adbw map_ptr player_x
-
-; 	; Get the tile the player is on
-; 	ldy #0
-; 	lda (map_ptr),y
-; 	sta on_tile
-
-; 	; Get the tile to the left of the player
-; 	dec16 map_ptr
-; 	lda (map_ptr),y
-; 	sta left_tile
-
-; 	; Get the tile to the right of the player
-; 	inc16 map_ptr
-; 	inc16 map_ptr
-; 	lda (map_ptr),y
-; 	sta right_tile
-
-; 	; Get the tile above the player
-; 	dec16 map_ptr
-; 	sbw map_ptr #map_width
-; 	lda (map_ptr),y
-; 	sta up_tile
-
-; 	; Get the tile below the player
-; 	adw map_ptr #(map_width * 2)
-; 	lda (map_ptr),y
-; 	sta down_tile
-
-; 	rts
-; 	.endp
 
 .macro blit_char char addr pos
 	lda :char
@@ -881,6 +740,7 @@ place
 	icl 'pmgdata.asm'
 	icl 'map_gen.asm'
 	icl 'input.asm'
+	icl 'status_chars.asm'
 
 	icl 'charset_dungeon_a.asm'
 	icl 'charset_dungeon_b.asm'
