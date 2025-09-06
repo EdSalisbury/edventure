@@ -1,3 +1,16 @@
+# Description
+
+This repository contains final code for each episode of [Coding a Roguelike in Atari 8-bit Assembly](https://youtu.be/whhTuBpkcrY?si=NNua2iIBsaxaKKlB) podcasts.
+
+Ever wanted to write a game on the ATARI 8-Bit?  If so, you're not alone!  Come along with me on my journey to make a Roguelike on the Atari 8-bit computer in 6502 Assembly language!
+
+Socials:
+- Instagram:   / missionedpossible  
+- Twitter:   / missionedposs  
+- Facebook:   / missionedpossible  
+- Website: http://missionedpossible.com
+
+
 # Setup
 
 ## Windows
@@ -50,10 +63,15 @@ sudo cp mads.linux-x86-64 /usr/local/bin/mads
 
 # and check if working
 mads --version
+
+# compiling .asm files
+masm -lt main.asm
 ```
 
 # Links
-1. https://linuxize.com/post/how-to-install-wine-on-ubuntu-20-04/
-2. https://virtualdub.org/altirra.html
-3. https://www.wudsn.com/
-4. https://github.com/wudsn/wudsn-ide-tools/tree/main/ASM/MADS
+1. [Coding a Roguelike in Atari 8-bit Assembly podcast](https://youtu.be/whhTuBpkcrY?si=NNua2iIBsaxaKKlB)
+2. [How to install wine](https://linuxize.com/post/how-to-install-wine-on-ubuntu-20-04/)
+3. [Altirra Atari Emulator](https://virtualdub.org/altirra.html)
+4. [WUDSN Atari Demo Group Page](https://www.wudsn.com/)
+5. [Assemblers Repository](https://github.com/wudsn/wudsn-ide-tools/tree/main/ASM/MADS)
+6. [Atari Memory Map](https://www.atariarchives.org/mapping/memorymap.php)
