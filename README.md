@@ -27,7 +27,20 @@ Just download it from https://virtualdub.org/altirra.html
 
 ### 3. Assembler
 
+The MADS assembler is available for download/clone from github repository: https://github.com/wudsn/wudsn-ide-tools/tree/main/ASM/MADS
+
+For linux machinne with 64bit system you can try https://github.com/wudsn/wudsn-ide-tools/blob/main/ASM/MADS/mads.linux-x86-64
+
+Likely you want to move it to one of the system binaries folders to have it avaliable under `mads` command:
+```shell
+sudo cp mads.linux-x86-64 /usr/local/bin/mads
+
+# and check if working
+mads --version
+```
+
 # Links
 1. https://linuxize.com/post/how-to-install-wine-on-ubuntu-20-04/
 2. https://virtualdub.org/altirra.html
-3. 
+3. https://www.wudsn.com/
+4. https://github.com/wudsn/wudsn-ide-tools/tree/main/ASM/MADS
