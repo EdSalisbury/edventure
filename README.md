@@ -1,5 +1,18 @@
 # Setup
 
+## Windows
+
+### 1. Atari Emulator - Altira
+
+Just download it from https://virtualdub.org/altirra.html
+
+### 3. Assembler
+
+The MADS assembler is available for download/clone from github repository: https://github.com/wudsn/wudsn-ide-tools/tree/main/ASM/MADS
+
+Copy the whole folder to your C: drive.
+
+
 ## Linux (Ubuntu)
 
 ### 1. Wine
