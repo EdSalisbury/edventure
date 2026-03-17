@@ -705,7 +705,7 @@ pick
 	cmp tmp2
 	bcs pick
 
-	add #44
+	add #33
 	sta tmp
 
 place

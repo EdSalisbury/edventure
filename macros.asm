@@ -92,11 +92,11 @@ loop
 .macro copy_monsters src dest start
     ; Characters are 8 bytes wide
     ; Tiles are 2 chacters wide
-    ; In the dungeon/outdoor charset, there's an open section starting at character 88
+    ; In the dungeon/outdoor charset, there's an open section starting at character 66
     mwa #:src tmp_addr1
     mwa #:dest tmp_addr2
 
-    adw tmp_addr2 #(88 * 8)
+    adw tmp_addr2 #(66 * 8)
 
     lda :start
     cmp #16
