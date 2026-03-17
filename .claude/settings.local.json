@@ -1,7 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(wc -l /d/Dev/edventure/*.asm)"
-    ]
-  }
-}
