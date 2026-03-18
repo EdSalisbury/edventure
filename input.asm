@@ -89,6 +89,8 @@ none                            ; Nothing to do
     lda #MAP_DOORWAY            ; Load in the doorway tile
     sti dir_ptr                 ; Swap door for doorway
     inc stick_action            ; Set the action flag
+    mwa #str_door_opened status_str_ptr
+    print_status
     rts
     .endp
 
@@ -96,6 +98,8 @@ none                            ; Nothing to do
     lda #MAP_DOOR               ; Load in the door tile
     sti dir_ptr                 ; Swap doorway for door
     inc stick_action            ; Set the action flag
+    mwa #str_door_closed status_str_ptr
+    print_status
     rts
     .endp
 

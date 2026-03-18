@@ -55,6 +55,7 @@ charset_outdoor_a_colors = $af00 ; 16 bytes
 charset_outdoor_b_colors = $af10 ; 16 bytes
 monsters_a_colors   = $af20 ; 51 bytes
 monsters_b_colors   = $af53 ; 51 bytes
+strings 						= $af86 ; ?? bytes
 
 ; free
 
@@ -76,8 +77,11 @@ left_tile	= $9c
 right_tile	= $9d
 on_tile		= $9e
 
+
 tmp_addr1	= $a0
 tmp_addr2   = $a2
+status_str_ptr = $a4
+
 
 screen_char_width 	= 40
 screen_width 		= 19
@@ -95,6 +99,7 @@ playfield_height 	= 11
 
 input_speed 		= 5
 anim_speed 			= 20
+status_duration = 240
 
 input_timer 		= $a4
 status_ptr 			= $a5 ; 16 bit
@@ -124,7 +129,7 @@ num_monsters		= $c2
 starting_monster	= $c3
 no_clip				= $c4
 char_colors_ptr		= $c5 ; 16 bit
-
+status_timer      = $c7
 	
 ;stick_dir    = $d8
 stick_btn    = $d9
@@ -197,6 +202,7 @@ gold = $2a
 game
 	mva RTCLK2 clock
 	animate
+	tick_status
 	get_input
 	jmp game
 
@@ -237,6 +243,8 @@ done
 	sta anim_timer
 done
 	.endm
+
+
 
 * --------------------------------------- *
 * Proc: delay                             *
@@ -745,7 +753,6 @@ place
 	icl 'pmgdata.asm'
 	icl 'map_gen.asm'
 	icl 'input.asm'
-	icl 'status_chars.asm'
 
 	icl 'charset_dungeon_a.asm'
 	icl 'charset_dungeon_b.asm'
@@ -764,6 +771,8 @@ place
 	icl 'charset_outdoor_b_colors.asm'
 	icl 'monsters_a_colors.asm'
 	icl 'monsters_b_colors.asm'
+	icl 'strings.asm'
+	icl 'status.asm'
 powers_of_two
 	.byte 1,2,4,8,16,32,64,128
 	
