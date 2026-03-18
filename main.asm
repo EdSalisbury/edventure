@@ -449,15 +449,20 @@ loop
 	bcc loop
 	.endm
 
-.proc display_borders
+.proc reset_top_border
 	mwa #status_line status_ptr
-	mwa #screen screen_ptr
-
 	blit_char #UI_NW_BORDER status_ptr #0
 	blit_char_row #UI_HORIZ_BORDER status_ptr #1 #23
 	blit_char #UI_TOP_TEE status_ptr #23
 	blit_char_row #UI_HORIZ_BORDER status_ptr #24 #39
 	blit_char #UI_NE_BORDER status_ptr #39
+	rts
+.endp
+
+.proc display_borders
+	mwa #screen screen_ptr
+
+	jsr reset_top_border
 	
 	ldx #playfield_height
 loop
@@ -705,7 +710,7 @@ pick
 	cmp tmp2
 	bcs pick
 
-	add #33
+	add #(MONSTER_START/2)
 	sta tmp
 
 place

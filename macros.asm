@@ -79,13 +79,13 @@ loop
     tay
 
     lda (tmp_addr1),y
-    sta :dest + 11
+    sta :dest + MONSTER_START/8
     iny
     lda (tmp_addr1),y
-    sta :dest + 12
+    sta :dest + MONSTER_START/8 + 1
     iny
     lda (tmp_addr1),y
-    sta :dest + 13
+    sta :dest + MONSTER_START/8 + 2
 .endm
 
 
@@ -96,7 +96,7 @@ loop
     mwa #:src tmp_addr1
     mwa #:dest tmp_addr2
 
-    adw tmp_addr2 #(66 * 8)
+    adw tmp_addr2 #(MONSTER_START * 8)
 
     lda :start
     cmp #16
