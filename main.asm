@@ -773,6 +773,7 @@ place
 	icl 'monsters_b_colors.asm'
 	icl 'strings.asm'
 	icl 'status.asm'
+	icl 'monster_data.asm'
 powers_of_two
 	.byte 1,2,4,8,16,32,64,128
 	
