@@ -3,31 +3,35 @@ str_door_opened               dta c"YOU OPENED A DOOR.",$FF
 str_door_closed               dta c"YOU CLOSED A DOOR.",$FF
 
 ; Monster names
-str_mon_bat      dta d'GIANT BAT',$FF
-str_mon_slime    dta d'SLIME',$FF
-str_mon_snake    dta d'GIANT SNAKE',$FF
-str_mon_gob_m    dta d'GOBLIN',$FF
-str_mon_gob_r    dta d'GOBLIN',$FF
-str_mon_gnoll    dta d'GNOLL',$FF
-str_mon_spider   dta d'GIANT SPIDER',$FF
-str_mon_mutant   dta d'MUTANT',$FF
-str_mon_troll    dta d'TROLL',$FF
-str_mon_imp      dta d'IMP',$FF
-str_mon_wolf     dta d'WEREWOLF',$FF
-str_mon_scorp    dta d'GIANT SCORPION',$FF
-str_mon_owlbear  dta d'OWLBEAR',$FF
-str_mon_mimic    dta d'MIMIC',$FF
-str_mon_ghost    dta d'GHOST',$FF
-str_mon_demon    dta d'DEMON',$FF
-str_mon_cyclops  dta d'CYCLOPS',$FF
-str_mon_wyvern   dta d'WYVERN',$FF
-str_mon_vampire  dta d'VAMPIRE',$FF
-str_mon_gazer    dta d'GAZER',$FF
-str_mon_wdragon  dta d'WHITE DRAGON',$FF
-str_mon_bdragon  dta d'BLACK DRAGON',$FF
-str_mon_bldragon dta d'BLUE DRAGON',$FF
-str_mon_rdragon  dta d'RED DRAGON',$FF
-str_mon_gdragon  dta d'GOLD DRAGON',$FF
+str_mon_rat      dta c'GIANT RAT',$FF
+str_mon_zombie   dta c'ZOMBIE',$FF
+str_mon_skel_m   dta c'SKELETON',$FF
+str_mon_skel_r   dta c'SKELETON',$FF
+str_mon_bat      dta c'GIANT BAT',$FF
+str_mon_slime    dta c'SLIME',$FF
+str_mon_snake    dta c'GIANT SNAKE',$FF
+str_mon_gob_m    dta c'GOBLIN',$FF
+str_mon_gob_r    dta c'GOBLIN',$FF
+str_mon_gnoll    dta c'GNOLL',$FF
+str_mon_spider   dta c'GIANT SPIDER',$FF
+str_mon_mutant   dta c'MUTANT',$FF
+str_mon_troll    dta c'TROLL',$FF
+str_mon_imp      dta c'IMP',$FF
+str_mon_wolf     dta c'WEREWOLF',$FF
+str_mon_scorp    dta c'GIANT SCORPION',$FF
+str_mon_owlbear  dta c'OWLBEAR',$FF
+str_mon_mimic    dta c'MIMIC',$FF
+str_mon_ghost    dta c'GHOST',$FF
+str_mon_demon    dta c'DEMON',$FF
+str_mon_cyclops  dta c'CYCLOPS',$FF
+str_mon_wyvern   dta c'WYVERN',$FF
+str_mon_vampire  dta c'VAMPIRE',$FF
+str_mon_gazer    dta c'GAZER',$FF
+str_mon_wdragon  dta c'WHITE DRAGON',$FF
+str_mon_bdragon  dta c'BLACK DRAGON',$FF
+str_mon_bldragon dta c'BLUE DRAGON',$FF
+str_mon_rdragon  dta c'RED DRAGON',$FF
+str_mon_gdragon  dta c'GOLD DRAGON',$FF
 
 ; Monster attack verbs
 str_verb_bites                dta c'BITES',$FF

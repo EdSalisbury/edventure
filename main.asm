@@ -78,9 +78,9 @@ right_tile	= $9d
 on_tile		= $9e
 
 
+
 tmp_addr1	= $a0
 tmp_addr2   = $a2
-status_str_ptr = $a4
 
 
 screen_char_width 	= 40
@@ -125,12 +125,13 @@ rand16				= $be
 clock				= $bf
 anim_timer			= $c0
 charset_a			= $c1
-num_monsters		= $c2
+window_size		= $c2
 starting_monster	= $c3
 no_clip				= $c4
 char_colors_ptr		= $c5 ; 16 bit
 status_timer      = $c7
-	
+monster_count			= $c8
+
 ;stick_dir    = $d8
 stick_btn    = $d9
 stick_action = $da
@@ -140,7 +141,10 @@ dir_ptr              = $e0
 tmp1 = $e2
 ; tmp2 = $e3
 
+status_str_ptr = $e5
 
+dungeon_index = $e7
+floor_index 	= $e8
 
 ; Colors
 white = $0a
@@ -165,10 +169,33 @@ gold = $2a
 	load_pmg()
 	setup_pmg()
 
+  mva #0 dungeon_index
+  mva #0 floor_index
+
+	; compute floor_params index = (dungeon_index * 5 + floor_index) * 3
+	lda dungeon_index
+	sta tmp
+	asl				; x2
+	asl				; x4
+	add tmp		; x5
+	add floor_index
+	sta tmp
+	asl				; x2
+	add tmp		; x3
+	tay
+	lda floor_params,y
+	sta starting_monster
+	iny
+	lda floor_params,y
+	sta window_size
+	iny
+	lda floor_params,y
+	sta monster_count
 
 	
-	mva #16 starting_monster
-	mva #8 num_monsters
+	
+	;mva #16 starting_monster
+	;mva #8 num_monsters
 
 	lda #16
 	sta player_x
@@ -191,7 +218,7 @@ gold = $2a
 	
 	new_map()
 	
-	place_monsters #255 num_monsters
+	place_monsters monster_count window_size
 	
 
 	lda #0
@@ -749,10 +776,14 @@ place
 	icl 'macros.asm'
 	icl 'hardware.asm'
 	icl 'labels.asm'
+	icl 'status.asm'
+	icl 'monster_data.asm'
+	icl 'dungeon_data.asm'
 	icl 'dlist.asm'
 	icl 'pmgdata.asm'
 	icl 'map_gen.asm'
 	icl 'input.asm'
+	icl 'strings.asm'
 
 	icl 'charset_dungeon_a.asm'
 	icl 'charset_dungeon_b.asm'
@@ -771,9 +802,6 @@ place
 	icl 'charset_outdoor_b_colors.asm'
 	icl 'monsters_a_colors.asm'
 	icl 'monsters_b_colors.asm'
-	icl 'strings.asm'
-	icl 'status.asm'
-	icl 'monster_data.asm'
 powers_of_two
 	.byte 1,2,4,8,16,32,64,128
 	
