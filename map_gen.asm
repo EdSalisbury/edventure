@@ -11,6 +11,21 @@
     .endm
 
 .proc new_map
+    ; Clear door and room tracking arrays before each map generation
+    lda #0
+    ldx #63
+clear_placed_doors
+    sta placed_doors,x
+    sta avail_doors,x
+    dex
+    bpl clear_placed_doors
+
+    ldx #7
+clear_occupied
+    sta occupied_rooms,x
+    dex
+    bpl clear_occupied
+
     mva #0 num_rooms
     mva #8 max_rooms
 
@@ -25,7 +40,11 @@ first_room
     jmp place
 
 last_room
+    lda floor_index
+    cmp #floors_per_dungeon - 1
+    beq skip_down
     place_special_tile #MAP_DOWN
+skip_down
     place_room
     jmp done
 
@@ -135,9 +154,15 @@ loop
     sta (map_ptr),y
 
     cmp #MAP_UP
-    bne next
+    bne check_down
     mva tmp_x player_x
     mva tmp_y player_y
+    jmp next
+check_down
+    cmp #MAP_DOWN
+    bne next
+    mva tmp_x stairs_down_x
+    mva tmp_y stairs_down_y
 next
     inc tmp_x
     iny

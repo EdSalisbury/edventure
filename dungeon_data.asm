@@ -1,6 +1,6 @@
 ; floor params: starting_monster, window_size, monster_count
-; indexed as (dungeon*5 + floor) * 3
-; floor 5 of each dungeon = dragon floor (dragon type implied by dungeon#)
+; indexed as (dungeon*floors_per_dungeon + floor) * 3
+; last floor of each dungeon = dragon floor (dragon type implied by dungeon#)
 floor_params
     ; dungeon 1 - white dragon
     dta  0, 3,  4   ; floor 1 - rat, zombie, skel m

@@ -53,23 +53,42 @@ check_left
     lda stick_dir               ; Re-copy non-mutated stick dir to AA
     and #STICK_LEFT             ; Check to see if it's pushed LEFT
     bne check_right             ; It's not pushed LEFT, so move to the next check
-    dec dir_ptr                 ; It is pushed LEFT, so move the temp pointer left one
+    dew dir_ptr                 ; It is pushed LEFT, so move the temp pointer left one
     rts
 
 check_right
     lda stick_dir               ; Re-copy non-mutated stick dir to A
     and #STICK_RIGHT            ; Check to see if it's pushed RIGHT
     bne done                    ; If not, we're done checking
-    inc dir_ptr                 ; It is pushed RIGHT, so move the temp pointer left one
+    inw dir_ptr                 ; It is pushed RIGHT, so move the temp pointer right one
 
 done
     rts
     .endp
 
 .proc player_action()
-    ldi dir_ptr                 ; Load in tile from direction
+check_stairs_down
+    ldi player_ptr              ; Check the tile the player is standing on
+    cmp #MAP_DOWN
+    bne check_stairs_up
+    lda STICK0
+    and #STICK_DOWN
+    bne check_stairs_up         ; Not pointing down, skip
+    descend_floor()
+    rts
+
+check_stairs_up
+    ldi player_ptr
+    cmp #MAP_UP
+    bne check_door
+    lda STICK0
+    and #STICK_UP
+    bne check_door              ; Not pointing up, skip
+    ascend_floor()
+    rts
 
 check_door
+    ldi dir_ptr                 ; Load in tile from direction
     cmp #MAP_DOOR               ; Check if it's a door
     bne check_doorway           ; Skip to next check
     open_door()                 ; Open the door

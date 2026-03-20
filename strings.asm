@@ -1,6 +1,8 @@
 ; Actions
 str_door_opened               dta c"YOU OPENED A DOOR.",$FF
 str_door_closed               dta c"YOU CLOSED A DOOR.",$FF
+str_descending                dta c"DESCENDING...",$FF
+str_ascending                 dta c"ASCENDING...",$FF
 
 ; Monster names
 str_mon_rat      dta c'GIANT RAT',$FF

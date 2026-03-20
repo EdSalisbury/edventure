@@ -143,8 +143,13 @@ tmp1 = $e2
 
 status_str_ptr = $e5
 
-dungeon_index = $e7
-floor_index 	= $e8
+dungeon_index   = $e7
+floor_index     = $e8
+stairs_down_x   = $e9
+stairs_down_y   = $ea
+world_seed      = $eb
+floor_seeds     = $ec   ; floors_per_dungeon bytes, one per floor
+floors_per_dungeon = 5
 
 ; Colors
 white = $0a
@@ -172,38 +177,20 @@ gold = $2a
   mva #0 dungeon_index
   mva #0 floor_index
 
-	; compute floor_params index = (dungeon_index * 5 + floor_index) * 3
-	lda dungeon_index
-	sta tmp
-	asl				; x2
-	asl				; x4
-	add tmp		; x5
-	add floor_index
-	sta tmp
-	asl				; x2
-	add tmp		; x3
-	tay
-	lda floor_params,y
-	sta starting_monster
-	iny
-	lda floor_params,y
-	sta window_size
-	iny
-	lda floor_params,y
-	sta monster_count
-
-	
-	
-	;mva #16 starting_monster
-	;mva #8 num_monsters
-
-	lda #16
-	sta player_x
-	sta player_y
-	
-	mva #123 rand
+	mva RTCLK2 world_seed   ; capture random world seed at startup
 	mva #201 rand16
-	
+
+	; Generate one seed per floor from world_seed using the LFSR
+	lda world_seed
+	sta rand
+	ldx #0
+gen_floor_seeds
+	jsr random8
+	sta floor_seeds,x
+	inx
+	cpx #floors_per_dungeon
+	bne gen_floor_seeds
+
 	mwa #powers_of_two pow2_ptr
 	mwa #occupied_rooms occupied_rooms_ptr
 
@@ -211,20 +198,15 @@ gold = $2a
 	copy_data charset_dungeon_b cur_charset_b 4
 	copy_bytes charset_dungeon_a_colors cur_char_colors_a 16
 	copy_bytes charset_dungeon_b_colors cur_char_colors_b 16
-	copy_monsters monsters_a cur_charset_a starting_monster
-	copy_monsters monsters_b cur_charset_b starting_monster
-	copy_monster_colors monsters_a_colors cur_char_colors_a starting_monster
-	copy_monster_colors monsters_b_colors cur_char_colors_b starting_monster
-	
-	new_map()
-	
-	place_monsters monster_count window_size
-	
+
+	lda #16
+	sta player_x
+	sta player_y
+
+	load_floor()
 
 	lda #0
 	sta no_clip
-	
-	init_player_ptr()
 
 game
 	mva RTCLK2 clock
@@ -772,6 +754,79 @@ place
 	rts
 	.endp
 
+
+; Load floor params and generate the map for the current dungeon_index/floor_index
+.proc load_floor
+	; compute floor_params index = (dungeon_index * 5 + floor_index) * 3
+	lda dungeon_index
+	sta tmp
+	asl             ; x2
+	asl             ; x4
+	add tmp         ; x5
+	add floor_index
+	sta tmp
+	asl             ; x2
+	add tmp         ; x3
+	tay
+	lda floor_params,y
+	sta starting_monster
+	iny
+	lda floor_params,y
+	sta window_size
+	iny
+	lda floor_params,y
+	sta monster_count
+
+	copy_monsters monsters_a cur_charset_a starting_monster
+	copy_monsters monsters_b cur_charset_b starting_monster
+	copy_monster_colors monsters_a_colors cur_char_colors_a starting_monster
+	copy_monster_colors monsters_b_colors cur_char_colors_b starting_monster
+
+	; Restore this floor's seed so map generation is always deterministic
+	ldy floor_index
+	lda floor_seeds,y
+	sta rand
+
+	new_map()
+	place_monsters monster_count window_size
+	init_player_ptr()
+	mva RTCLK2 clock    ; refresh clock after generation delay
+	lda clock
+	sta input_timer     ; reset so get_input fires immediately
+	sta anim_timer      ; reset so animate fires immediately
+	rts
+	.endp
+
+.proc descend_floor
+	inc floor_index
+	inc stick_action
+	mwa #str_descending status_str_ptr
+	print_status
+	lda #16
+	sta player_x
+	sta player_y
+	load_floor()
+	rts
+	.endp
+
+.proc ascend_floor
+	lda floor_index
+	beq done            ; floor 0 = dungeon exit, stub for now
+	dec floor_index
+	inc stick_action
+	mwa #str_ascending status_str_ptr
+	print_status
+	lda #16
+	sta player_x
+	sta player_y
+	load_floor()
+	; reposition player at the down stairs (arrived from below)
+	mva stairs_down_x player_x
+	mva stairs_down_y player_y
+	init_player_ptr()
+done
+	rts
+	.endp
 
 	icl 'macros.asm'
 	icl 'hardware.asm'
