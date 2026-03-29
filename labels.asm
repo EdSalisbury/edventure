@@ -3,6 +3,13 @@ DOOR_SOUTH              = %0100
 DOOR_WEST               = %0010
 DOOR_EAST               = %0001
 
+; Monster instance struct offsets
+MON_TYPE    = 0
+MON_X       = 1
+MON_Y       = 2
+MON_HP      = 3
+MON_SIZE    = 4     ; bytes per instance
+
 MAP_WALL                = 1
 MAP_FLOOR               = 127
 MAP_UP                  = 121
