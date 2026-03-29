@@ -16,7 +16,8 @@
 
 	org $b000
 ; RAM: $2000-7FFF - 24K
-map     			= $2000 ; Map (16K+)
+map     			= $2000 ; Map (~19K, ends ~$6B78)
+monster_instances	= $6c00 ; Monster instance data (32 per floor * 5 floors * 4 bytes = 640 bytes, $6C00-$6E7F)
 screen  			= $7000 ; Screen buffer (480 bytes)
 status_line			= $71e0 ; Status Line (40 bytes)
 tmp_room			= $7208 ; Temp room (225 bytes)
@@ -149,7 +150,9 @@ stairs_down_x   = $e9
 stairs_down_y   = $ea
 world_seed      = $eb
 floor_seeds     = $ec   ; floors_per_dungeon bytes, one per floor
+mon_ptr         = $f1   ; 16-bit pointer into monster_instances for current floor
 floors_per_dungeon = 5
+monsters_per_floor = 32
 
 ; Colors
 white = $0a
