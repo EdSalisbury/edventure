@@ -723,8 +723,36 @@ no_eor
 	rts
 	.endp
 
+; place_monsters: place X monsters on the map and record their instance data
+; x = monster_count, a = window_size (number of monster types available)
+;
+; mon_ptr base address per floor (monsters_per_floor=32, MON_SIZE=4 = 128 bytes per floor):
+;
+;   floor | floor_index | LSR: A  carry | lo byte      | hi byte
+;   ------+-------------+---------------+--------------+---------
+;     0   |  %00000000  |   0      0    | 0->bit7=$00  | $6C+0=$6C
+;     1   |  %00000001  |   0      1    | 1->bit7=$80  | $6C+0=$6C
+;     2   |  %00000010  |   1      0    | 0->bit7=$00  | $6C+1=$6D
+;     3   |  %00000011  |   1      1    | 1->bit7=$80  | $6C+1=$6D
+;     4   |  %00000100  |   2      0    | 0->bit7=$00  | $6C+2=$6E
+;
+; LSR shifts floor_index right: bit 0 -> carry, rest -> A (= floor_index/2)
+; carry bit -> bit 7 of lo byte via: lda #0, ror  (gives $00 or $80)
+; hi byte = >monster_instances + A
 .proc place_monsters (.byte x,a) .reg
 	sta tmp2
+
+	; Set mon_ptr to the base address for this floor's monster instances
+	lda floor_index
+	lsr                     ; A = floor_index/2, carry = bit 0 (odd/even)
+	pha                     ; save floor_index/2
+	lda #0
+	ror                     ; carry -> bit 7: A = $00 (even floor) or $80 (odd floor)
+	sta mon_ptr             ; lo byte
+	pla                     ; restore floor_index/2
+	adc #>monster_instances ; carry is always 0 after ror of $00, so safe to add
+	sta mon_ptr+1           ; hi byte
+
 pick
 	random16
 	cmp tmp2
