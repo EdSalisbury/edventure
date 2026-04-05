@@ -778,7 +778,24 @@ place
 	cmp #MAP_FLOOR
 	bne place
 	lda tmp
-	sta (map_ptr),y
+	sta (map_ptr),y         ; place monster tile on map
+
+	; record instance data at (mon_ptr)
+	lda tmp                 ; MON_TYPE: monster tile index
+	sta (mon_ptr),y         ; y is still 0
+	iny
+	lda tmp_x               ; MON_X
+	sta (mon_ptr),y
+	iny
+	lda tmp_y               ; MON_Y
+	sta (mon_ptr),y
+	iny
+	lda #1                  ; MON_HP: 1 for now, real values come when combat is added
+	sta (mon_ptr),y
+	ldy #0                  ; restore y
+
+	adbw mon_ptr #MON_SIZE  ; advance mon_ptr to next instance slot
+
 	dex
 	bne pick
 

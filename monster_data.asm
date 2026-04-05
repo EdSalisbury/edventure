@@ -63,12 +63,6 @@ monster_speed
     dta  0, 3, 2, 1, 3, 3, 2     ; mimic, ghost, demon, cyclops, wyvern, vampire, gazer
     dta  1, 1, 1, 1, 1           ; dragons (slow but terrifying)
 
-; hit points
-monster_hp
-    dta   8, 20, 15, 12,  8, 25, 18, 22  ; rat, zombie, skel m, skel r, bat, slime, snake, gob m
-    dta  20, 35, 30, 45, 60, 35, 40, 45  ; gob r, gnoll, spider, mutant, troll, imp, wolf, scorp
-    dta  55, 70, 40, 85,100, 80, 90,110  ; owlbear, mimic, ghost, demon, cyclops, wyvern, vampire, gazer
-    dta 160,185,210,235,255              ; dragons
 
 ; verb id (0=bites,1=claws,2=hits,3=stings,4-7=breath)
 monster_verb_id
