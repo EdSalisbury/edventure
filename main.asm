@@ -18,6 +18,7 @@
 ; RAM: $2000-7FFF - 24K
 map     			= $2000 ; Map (~19K, ends ~$6B78)
 monster_instances	= $6c00 ; Monster instance data (32 per floor * 5 floors * 4 bytes = 640 bytes, $6C00-$6E7F)
+monster_aggro		= $6e80 ; Aggro bitfield (32 monsters * 5 floors = 1 bit each, 4 bytes per floor, $6E80-$6E93)
 screen  			= $7000 ; Screen buffer (480 bytes)
 status_line			= $71e0 ; Status Line (40 bytes)
 tmp_room			= $7208 ; Temp room (225 bytes)
