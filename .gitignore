@@ -1,3 +1,6 @@
 *.lab
 *.lst
 *.obx
+*.xex
+*.obj
+.claude/

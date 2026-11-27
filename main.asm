@@ -3,7 +3,7 @@
 ; Mission: EdPossible
 ; youtube.com/MissionEdPossible
 ; Assemble in MADS: mads -l -t main.asm
-; Episode 9: Bigger map!
+; Episode 11: Scrolling
 
 ; ATASCII Table: https://www.atariwiki.org/wiki/attach/Atari%20ATASCII%20Table/ascii_atascii_table.pdf
 ; ATASCII 0-31 Screen code 64-95
@@ -11,54 +11,285 @@
 ; ATASCII 96-127 Screen code 96-127
 
 ; NTSC Color Palette: https://atariage.com/forums/uploads/monthly_10_2015/post-6369-0-47505700-1443889945.png
-; PAL Color Palette: https://atariage.com/forums/uploads/monthly_10_2015/post-6369-0-90255700-1443889950.png
+; PAL Color Palette: https://atariage.com/forums/uploads/monthly_10_2015/post-6369-0-902WALKABLE_START700-1443889950.png
 ; PMG Memory Map: https://www.atarimagazines.com/compute/issue64/atari_animation.gif
 
-	org $2000
+	org $b000
+; RAM: $2000-7FFF - 24K
+map     			= $2000 ; Map (~19K, ends ~$6B78)
+monster_instances	= $6c00 ; Monster instance data (32 per floor * 5 floors * 4 bytes = 640 bytes, $6C00-$6E7F)
+monster_aggro		= $6e80 ; Aggro bitfield (32 monsters * 5 floors = 1 bit each, 4 bytes per floor, $6E80-$6E93)
+screen  			= $7000 ; Screen buffer (480 bytes)
+status_line			= $71e0 ; Status Line (40 bytes)
+tmp_room			= $7208 ; Temp room (225 bytes)
+placed_doors		= $72e9 ; Doors that have been placed (64 bytes)
+avail_doors			= $7329	; Doors that are available (64 bytes)
+occupied_rooms		= $7369 ; Rooms that are occupied (8 bytes)
+; free
+cur_char_colors_a	= $7380 ; 16 bytes
+cur_char_colors_b	= $7390	; 16 bytes
+; free
 
-map     = $3000 ; Map
-charset = $4000 ; Character Set
-pmg     = $5000 ; Player Missile Data
-canvas  = $6000 ; Screen buffer
+pmg     			= $7400 ; Player Missle Data (1K)
+cur_charset_a		= $7800 ; Current character set A (1K)
+cur_charset_b		= $7c00 ; Current character set B (1K)
+; free
 
+; 16K Cartridge ROM: $8000-BFFF - 16K
+; 8000-8FFF
+charset_dungeon_a 	= $8000 ; Main character set (1K)
+charset_dungeon_b 	= $8400 ; Main character set (1K)
+charset_outdoor_a 	= $8800 ; Character Set for outdoors (1K)
+charset_outdoor_b 	= $8c00 ; Character Set for outdoors (1K)
+
+; 9000-9FFF
+monsters_a          = $9000 ; Monster characters (1K)
+monsters_b          = $9400 ; Monster characters (1K)
+; free
+dlist				= $9800
+room_types			= $a000 ; 3600 Bytes
+room_positions		= $ae10	; 128 bytes
+room_pos_doors		= $ae90 ; 64 bytes
+room_type_doors		= $aed0 ; 16 bytes
+charset_dungeon_a_colors = $aee0 ; 16 bytes
+charset_dungeon_b_colors = $aef0 ; 16 bytes
+charset_outdoor_a_colors = $af00 ; 16 bytes
+charset_outdoor_b_colors = $af10 ; 16 bytes
+monsters_a_colors   = $af20 ; 51 bytes
+monsters_b_colors   = $af53 ; 51 bytes
+strings 						= $af86 ; ?? bytes
+
+; free
+
+; B000-BFFF (Code)
+
+; stick_up    = %0001
+; stick_down  = %0010 
+; stick_left  = %0100
+; stick_right = %1000
+
+map_ptr 	= $92
+screen_ptr 	= $94
+player_x	= $96
+player_y	= $97
+tmp			= $98
+up_tile		= $9a
+down_tile	= $9b
+left_tile	= $9c
+right_tile	= $9d
+on_tile		= $9e
+
+
+
+tmp_addr1	= $a0
+tmp_addr2   = $a2
+
+
+screen_char_width 	= 40
+screen_width 		= 19
+screen_height 		= 11
+border				= 6
+room_width			= 15
+room_height			= 15
+map_width 			= room_width * 8 + 7 + border * 2
+map_height 			= room_height * 8 + 7 + border * 2
+map_room_columns	= 8
+map_room_rows		= 8
+
+playfield_width 	= 11
+playfield_height 	= 11
+
+input_speed 		= 5
+anim_speed 			= 20
+status_duration = 240
+
+input_timer 		= $a4
+status_ptr 			= $a5 ; 16 bit
+rand				= $a7
+room_type			= $a8
+room_pos			= $a9
+room_x				= $aa
+room_y				= $ab
+room_ptr			= $ac ; 16 bit
+tmp_x				= $ae
+tmp_y				= $af
+num_rooms			= $b0
+max_rooms			= $b1
+placed_doors_ptr	= $b2 ; 16 bit
+avail_doors_ptr		= $b4 ; 16 bit
+room_col			= $b6
+room_row			= $b7
+pow2_ptr			= $b8 ; 16 bit
+occupied_rooms_ptr  = $ba ; 16 bit
+doors				= $bc
+tmp2				= $bd
+rand16				= $be
+clock				= $bf
+anim_timer			= $c0
+charset_a			= $c1
+window_size		= $c2
+starting_monster	= $c3
+no_clip				= $c4
+char_colors_ptr		= $c5 ; 16 bit
+status_timer      = $c7
+monster_count			= $c8
+
+;stick_dir    = $d8
+stick_btn    = $d9
+stick_action = $da
+
+player_ptr           = $de
+dir_ptr              = $e0
+tmp1 = $e2
+; tmp2 = $e3
+
+status_str_ptr = $e5
+
+dungeon_index   = $e7
+floor_index     = $e8
+stairs_down_x   = $e9
+stairs_down_y   = $ea
+world_seed      = $eb
+floor_seeds     = $ec   ; floors_per_dungeon bytes, one per floor
+mon_ptr         = $f1   ; 16-bit pointer into monster_instances for current floor
+floors_per_dungeon = 5
+monsters_per_floor = 32
+
+; Colors
+white = $0a
+red = $32
+black = $00
+peach = $2c
+blue = $92
+gold = $2a
+	
+	mwa #map map_ptr
+
+	debug
 	setup_screen()
+	
+	;update_player_tiles()
+	display_borders()
+	
+	update_ui()
 	setup_colors()
-	mva #>charset CHBAS
+	mva #>charset_outdoor_a CHBAS
 	clear_pmg()
 	load_pmg()
 	setup_pmg()
-	copy_map_to_canvas()
 
-	jmp *
+  mva #0 dungeon_index
+  mva #0 floor_index
 
-	icl 'hardware.asm'
-	icl 'dlist.asm'
-	icl 'gfx.asm'
-	icl 'pmgdata.asm'
-	icl 'map.asm'
+	mva RTCLK2 world_seed   ; capture random world seed at startup
+	mva #201 rand16
+
+	; Generate one seed per floor from world_seed using the LFSR
+	lda world_seed
+	sta rand
+	ldx #0
+gen_floor_seeds
+	jsr random8
+	sta floor_seeds,x
+	inx
+	cpx #floors_per_dungeon
+	bne gen_floor_seeds
+
+	mwa #powers_of_two pow2_ptr
+	mwa #occupied_rooms occupied_rooms_ptr
+
+	copy_data charset_dungeon_a cur_charset_a 4
+	copy_data charset_dungeon_b cur_charset_b 4
+	copy_bytes charset_dungeon_a_colors cur_char_colors_a 16
+	copy_bytes charset_dungeon_b_colors cur_char_colors_b 16
+
+	lda #16
+	sta player_x
+	sta player_y
+
+	load_floor()
+
+	lda #0
+	sta no_clip
+
+game
+	mva RTCLK2 clock
+	animate
+	tick_status
+	get_input
+	jmp game
+
+.macro set_colors
+	lda charset_a
+	beq use_charset_a
+	mwa #cur_char_colors_b char_colors_ptr
+	jmp done
+use_charset_a
+	mwa #cur_char_colors_a char_colors_ptr
+done
+.endm
+
+
+.macro get_input
+	lda clock
+	cmp input_timer
+	bne done
+	read_joystick()
+	blit_screen()
+	lda clock
+	add #input_speed
+	sta input_timer
+done
+	.endm
+
+.macro animate
+	lda clock
+	cmp anim_timer
+	bne done
+	lda charset_a
+	eor #$ff
+	sta charset_a
+	;set_colors
+	blit_screen
+	lda clock
+	add #anim_speed
+	sta anim_timer
+done
+	.endm
+
+
+
+* --------------------------------------- *
+* Proc: delay                             *
+* Uses Real-time clock to delay x/60 secs *
+* --------------------------------------- *
+.proc delay (.byte x) .reg
+start
+	lda RTCLK2
+wait
+	cmp RTCLK2
+	beq wait
+
+	dex
+	bne start
+
+	rts
+	.endp
 
 * --------------------------------------- *
 * Proc: setup_colors                      *
 * Sets up colors                          *
 * --------------------------------------- *
 .proc setup_colors
-med_gray = $06
-lt_gray = $0a
-green = $c2
-brown = $22
-black = $00
-peach = $2c
-blue = $80
-
 	; Character Set Colors
-	mva #med_gray COLOR0 ; %01
-	mva #lt_gray COLOR1  ; %10
-	mva #green COLOR2	 ; %11
-	mva #brown COLOR3    ; %11 (inverse)
-	mva #black COLOR4    ; %00
+	mva #white COLOR0 	; %01
+	mva #red COLOR1  	; %10
+	mva #blue COLOR2	; %11
+	mva #gold COLOR3    ; %11 (inverse)
+	mva #black COLOR4   ; %00
 
 	; Player-Missile Colors
-	mva #brown PCOLR0
+	mva #red PCOLR0
 	mva #peach PCOLR1
 	mva #blue PCOLR2
 	mva #black PCOLR3
@@ -100,10 +331,10 @@ pmg_p3 = pmg + $380
 
 	ldx #0
 loop
-	mva pmgdata,x pmg_p0+64,x
-	mva pmgdata+8,x pmg_p1+64,x
-	mva pmgdata+16,x pmg_p2+64,x
-	mva pmgdata+24,x pmg_p3+64,x
+	mva pmgdata,x pmg_p0+60,x
+	mva pmgdata+8,x pmg_p1+60,x
+	mva pmgdata+16,x pmg_p2+60,x
+	mva pmgdata+24,x pmg_p3+60,x
 	inx
 	cpx #8
 	bne loop
@@ -119,7 +350,7 @@ loop
 	mva #46 SDMCTL ; Single Line resolution
 	mva #3 GRACTL  ; Enable PMG
 	mva #1 GRPRIOR ; Give players priority
-	lda #120
+	lda #92
 	sta HPOSP0
 	sta HPOSP1
 	sta HPOSP2
@@ -127,60 +358,554 @@ loop
 	rts
 	.endp
 
-* --------------------------------------- *
-* Macro: blit_row                         *
-* Copies one line of map to screen        *
-* --------------------------------------- *
-.macro blit_row map, screen
-	ldx #0
-	ldy #0
-loop
-	lda :map,x
-	asl
-	sta :screen,y
-	iny
-	clc
-	adc #1
-	sta :screen,y
-	iny
-	inx
-	cpx #20
-	bne loop
-	.endm
+.macro fix_color
+	; Save Y register
+	sta tmp
+	tya
+	pha
+	lda tmp
 
-* --------------------------------------- *
-* Proc: copy_map_to_canvas                *
-* Copies map to canvas with interpolation *
-* --------------------------------------- *
-.proc copy_map_to_canvas
-map_ptr = $92
-canvas_ptr = $94
+	; Get number of LSRs to perform (how many times to shift)
+	and #$07
+	add #1
+	sta tmp2
+	
+	; Get color index
+	lda tmp
+	lsr
+	lsr
+	lsr
+	tay
+	lda (char_colors_ptr),y
 
-	mwa #map map_ptr
-	mwa #canvas canvas_ptr
+	; Shift right as necessary to put the desired bit into the carry flag
+shift_bits
+	lsr
+	dec tmp2
+	bne shift_bits
 
-	ldy #0
-loop
+	; Check the carry flag to see if it has a 1 - if so, it needs to be yellow, otherwise blue
+	bcc done
+
+add_color
+	lda tmp
+	add #128
+	sta tmp
+
+done
+	; Restore the Y register
+	pla
+	tay
+	lda tmp
+.endm
+
+.macro blit_tile
+	lda (map_ptr),y			; Load the tile from the map
+	asl						; Multiply by two to get left character
+	fix_color
+	sta (screen_ptr),y		; Store the left character
+	inc16 screen_ptr		; Advance the screen pointer
 	lda (map_ptr),y
 	asl
-	sta (canvas_ptr),y
-
-	inc canvas_ptr
-	bne next
-	inc canvas_ptr+1
-
-next
 	add #1
-	sta (canvas_ptr),y
+	fix_color				; Add one to get right character
+	sta (screen_ptr),y		; Store the right character
+	adw map_ptr #1			; Advance the map pointer
+	adw screen_ptr #1		; Advance the screen pointer	
+	.endm
+
+.macro blit_circle_line body, map_space, screen_space
+	mwa map_ptr tmp_addr1
+	mwa screen_ptr tmp_addr2
+	
+	adw map_ptr #:map_space
+	adw screen_ptr #:screen_space
+	ldx #:body
+loop
+	blit_tile()
+	dex
+	bne loop
+
+	mwa tmp_addr1 map_ptr
+	mwa tmp_addr2 screen_ptr
+	.endm
+
+.proc init_player_ptr
+	mwa #map map_ptr
+	mwa map_ptr player_ptr			; Copy the map address to the player pointer
+
+	; Shift player_y rows
+    ldy player_y				; Load in Y starting location (number of rows)
+loop
+    adw player_ptr #map_width	; Add a row
+    dey
+    bne loop					; Keep going
+    
+	; Shift player_x columns
+	adbw player_ptr player_x	; Add player_x number of columns
+    rts
+.endp
+
+.proc map_offset
+	mwa #screen screen_ptr
+	mwa player_ptr map_ptr								; Copy player location to map location
+	sbw map_ptr #(playfield_height / 2 * map_width)		; Subtract height
+	sbw map_ptr #(playfield_width / 2)					; Subtract width
+	rts
+	.endp
+
+.macro blit_char char addr pos
+	lda :char
+	ldy :pos
+	sta (:addr),y
+	.endm
+
+.macro blit_char_row char addr start end
+	lda :char
+	ldy :start
+loop
+	sta (:addr),y
 	iny
+	cpy :end
+	bcc loop
+	.endm
+
+.proc reset_top_border
+	mwa #status_line status_ptr
+	blit_char #UI_NW_BORDER status_ptr #0
+	blit_char_row #UI_HORIZ_BORDER status_ptr #1 #23
+	blit_char #UI_TOP_TEE status_ptr #23
+	blit_char_row #UI_HORIZ_BORDER status_ptr #24 #39
+	blit_char #UI_NE_BORDER status_ptr #39
+	rts
+.endp
+
+.proc display_borders
+	mwa #screen screen_ptr
+
+	jsr reset_top_border
+	
+	ldx #playfield_height
+loop
+	blit_char #UI_VERT_BORDER screen_ptr #0
+	blit_char #UI_VERT_BORDER screen_ptr #23
+	blit_char #UI_VERT_BORDER screen_ptr #39
+	adw screen_ptr #screen_char_width
+	dex
 	bne loop
 
-	inc map_ptr+1
-	inc canvas_ptr+1
+	blit_char #UI_SW_BORDER screen_ptr #0
+	blit_char_row #UI_HORIZ_BORDER screen_ptr #1 #23
+	blit_char #UI_BOTTOM_TEE screen_ptr #23
+	blit_char_row #UI_HORIZ_BORDER screen_ptr #24 #39
+	blit_char #UI_SE_BORDER screen_ptr #39
+	
+	rts
+	.endp
 
-	lda map_ptr+1
-	cmp #>(map + $1000)
-	bne loop
+.proc update_ui
+	mwa #screen screen_ptr
+	; HP Bar
+	blit_char #UI_HP_ICON_LEFT screen_ptr #25
+	blit_char #UI_HP_ICON_RIGHT screen_ptr #26
+	blit_char #UI_COLON screen_ptr #27
+	blit_char #UI_BAR_LEFT screen_ptr #28
+	blit_char #UI_HP_FULL screen_ptr #29
+	blit_char #UI_HP_FULL screen_ptr #30
+	blit_char #UI_HP_FULL screen_ptr #31
+	blit_char #UI_HP_FULL screen_ptr #32
+	blit_char #UI_HP_FULL screen_ptr #33
+	blit_char #UI_HP_3_QTR screen_ptr #34
+	blit_char #UI_BAR_RIGHT screen_ptr #35
+
+	adw screen_ptr #screen_char_width
+
+	; Skills
+	blit_char #UI_MELEE_ICON_LEFT screen_ptr #25
+	blit_char #UI_MELEE_ICON_RIGHT screen_ptr #26
+	blit_char #UI_COLON screen_ptr #27
+	blit_char #UI_NUMBER_0 screen_ptr #28
+	blit_char #UI_NUMBER_0 screen_ptr #29
+	blit_char #UI_NUMBER_0 screen_ptr #30
+
+	blit_char #UI_RANGED_ICON_LEFT screen_ptr #32
+	blit_char #UI_RANGED_ICON_RIGHT screen_ptr #33
+	blit_char #UI_COLON screen_ptr #34
+	blit_char #UI_NUMBER_0 screen_ptr #35
+	blit_char #UI_NUMBER_0 screen_ptr #36
+	blit_char #UI_NUMBER_0 screen_ptr #37
+
+	adw screen_ptr #screen_char_width
+
+	blit_char #UI_DEFENSE_ICON_LEFT screen_ptr #25
+	blit_char #UI_DEFENSE_ICON_RIGHT screen_ptr #26
+	blit_char #UI_COLON screen_ptr #27
+	blit_char #UI_NUMBER_0 screen_ptr #28
+	blit_char #UI_NUMBER_0 screen_ptr #29
+	blit_char #UI_NUMBER_0 screen_ptr #30
+
+	blit_char #UI_FORTITUDE_ICON_LEFT screen_ptr #32
+	blit_char #UI_FORTITUDE_ICON_RIGHT screen_ptr #33
+	blit_char #UI_COLON screen_ptr #34
+	blit_char #UI_NUMBER_0 screen_ptr #35
+	blit_char #UI_NUMBER_0 screen_ptr #36
+	blit_char #UI_NUMBER_0 screen_ptr #37
+
+	adw screen_ptr #screen_char_width
+
+	; XP Bar
+	blit_char #UI_XP_ICON_LEFT screen_ptr #25
+	blit_char #UI_XP_ICON_RIGHT screen_ptr #26
+	blit_char #UI_COLON screen_ptr #27
+	blit_char #UI_BAR_LEFT screen_ptr #28
+	blit_char #UI_XP_FULL screen_ptr #29
+	blit_char #UI_XP_FULL screen_ptr #30
+	blit_char #UI_XP_FULL screen_ptr #31
+	blit_char #UI_XP_FULL screen_ptr #32
+	blit_char #UI_XP_FULL screen_ptr #33
+	blit_char #UI_XP_FULL screen_ptr #34
+	blit_char #UI_XP_HALF screen_ptr #35
+	blit_char #UI_BAR_EMPTY screen_ptr #36
+	blit_char #UI_BAR_EMPTY screen_ptr #37
+	blit_char #UI_BAR_RIGHT screen_ptr #38
+
+	adw screen_ptr #screen_char_width
+
+	; Inventory
+	blit_char #UI_TORCH_ICON_LEFT screen_ptr #25
+	blit_char #UI_TORCH_ICON_RIGHT screen_ptr #26
+	blit_char #UI_COLON screen_ptr #27
+	blit_char #UI_NUMBER_0 screen_ptr #28
+	blit_char #UI_NUMBER_0 screen_ptr #29
+	blit_char #UI_NUMBER_0 screen_ptr #30
+
+	blit_char #UI_POTION_ICON_LEFT screen_ptr #32
+	blit_char #UI_POTION_ICON_RIGHT screen_ptr #33
+	blit_char #UI_COLON screen_ptr #34
+	blit_char #UI_NUMBER_0 screen_ptr #35
+	blit_char #UI_NUMBER_0 screen_ptr #36
+	blit_char #UI_NUMBER_0 screen_ptr #37
+
+	adw screen_ptr #screen_char_width
+	blit_char #UI_COIN_ICON_LEFT screen_ptr #25
+	blit_char #UI_COIN_ICON_RIGHT screen_ptr #26
+	blit_char #UI_COLON screen_ptr #27
+	blit_char #UI_NUMBER_0 screen_ptr #28
+	blit_char #UI_NUMBER_0 screen_ptr #29
+	blit_char #UI_NUMBER_0 screen_ptr #30
+	blit_char #UI_NUMBER_0 screen_ptr #31
+	blit_char #UI_NUMBER_0 screen_ptr #32
+
+	; Amulet
+	adw screen_ptr #screen_char_width
+	adw screen_ptr #screen_char_width
+	blit_char #UI_AMULET_NW_ICON_LEFT screen_ptr #29
+	blit_char #UI_AMULET_NW_ICON_RIGHT screen_ptr #30
+	blit_char #UI_BLACK_GEM_ICON_LEFT screen_ptr #31
+	blit_char #UI_BLACK_GEM_ICON_RIGHT screen_ptr #32
+	blit_char #UI_AMULET_NE_ICON_LEFT screen_ptr #33
+	blit_char #UI_AMULET_NE_ICON_RIGHT screen_ptr #34
+
+	adw screen_ptr #screen_char_width
+	blit_char #UI_BLUE_GEM_ICON_LEFT screen_ptr #29
+	blit_char #UI_BLUE_GEM_ICON_RIGHT screen_ptr #30
+	blit_char #UI_WHITE_GEM_ICON_LEFT screen_ptr #31
+	blit_char #UI_WHITE_GEM_ICON_RIGHT screen_ptr #32
+	blit_char #UI_RED_GEM_ICON_LEFT screen_ptr #33
+	blit_char #UI_RED_GEM_ICON_RIGHT screen_ptr #34
+
+	adw screen_ptr #screen_char_width
+	blit_char #UI_AMULET_SW_ICON_LEFT screen_ptr #29
+	blit_char #UI_AMULET_SW_ICON_RIGHT screen_ptr #30
+	blit_char #UI_GOLD_GEM_ICON_LEFT screen_ptr #31
+	blit_char #UI_GOLD_GEM_ICON_RIGHT screen_ptr #32
+	blit_char #UI_AMULET_SE_ICON_LEFT screen_ptr #33
+	blit_char #UI_AMULET_SE_ICON_RIGHT screen_ptr #34
+
+	; Keys
+	sbw screen_ptr #(screen_char_width * 2)
+	blit_char #UI_BLUE_KEY_ICON screen_ptr #26
+	blit_char #UI_KEY_ICON_RIGHT screen_ptr #27
+
+	blit_char #UI_BLACK_KEY_CAP_LEFT screen_ptr #35
+	blit_char #UI_BLACK_KEY_ICON_LEFT screen_ptr #36
+	blit_char #UI_BLACK_KEY_ICON_RIGHT screen_ptr #37
+	blit_char #UI_BLACK_KEY_CAP_RIGHT screen_ptr #38
+
+	adw screen_ptr #screen_char_width
+	blit_char #UI_RED_KEY_ICON screen_ptr #26
+	blit_char #UI_KEY_ICON_RIGHT screen_ptr #27
+	blit_char #UI_WHITE_KEY_ICON screen_ptr #36
+	blit_char #UI_KEY_ICON_RIGHT screen_ptr #37
+
+	adw screen_ptr #screen_char_width
+	blit_char #UI_GOLD_KEY_ICON screen_ptr #26
+	blit_char #UI_KEY_ICON_RIGHT screen_ptr #27
 
 	rts
 	.endp
+
+
+.proc blit_screen
+	map_offset()
+
+	ldy #0
+	; Line #1
+	adw screen_ptr #screen_char_width
+	adw map_ptr #map_width
+	blit_circle_line 5, 3, 7
+
+	; Line #2
+	adw screen_ptr #screen_char_width
+	adw map_ptr #map_width
+	blit_circle_line 7, 2, 5
+
+	; Line #3
+	adw screen_ptr #screen_char_width
+	adw map_ptr #map_width
+	blit_circle_line 9, 1, 3
+
+	; Line #4
+	adw screen_ptr #screen_char_width
+	adw map_ptr #map_width
+	blit_circle_line 9, 1, 3
+
+	; Line #5
+	adw screen_ptr #screen_char_width
+	adw map_ptr #map_width
+	blit_circle_line 9, 1, 3
+
+	; Line #6
+	adw screen_ptr #screen_char_width
+	adw map_ptr #map_width
+	blit_circle_line 9, 1, 3
+
+	; Line #7
+	adw screen_ptr #screen_char_width
+	adw map_ptr #map_width
+	blit_circle_line 9, 1, 3
+
+	; Line #8
+	adw screen_ptr #screen_char_width
+	adw map_ptr #map_width
+	blit_circle_line 7, 2, 5
+
+	; Line #9
+	adw screen_ptr #screen_char_width
+	adw map_ptr #map_width
+	blit_circle_line 5, 3, 7
+
+	rts
+	.endp
+
+; Uses a linear-feedback shift register (LFSR) to generate 8-bit pseudo-random numbers
+; More info: https://en.wikipedia.org/wiki/Linear-feedback_shift_register
+; Also here: https://forums.atariage.com/topic/159268-random-numbers/#comment-1958751
+; Also here: https://github.com/bbbradsmith/prng_6502
+.proc random8
+	lda rand				; Load in seed or last number generated
+	lsr						; Shift 1 place to the right
+	bcc no_eor				; Carry flag contains the last bit prior to shifting - if 0, skip XOR
+	eor #$b4				; XOR with feedback value that produces a good sequence
+no_eor
+	sta rand				; Store the random number
+	rts
+	.endp
+
+.proc random16
+	lda rand				; Load in seed or last number generated
+	lsr						; Shift 1 place to the right
+	rol rand16
+	bcc no_eor				; Carry flag contains the last bit prior to shifting - if 0, skip XOR
+	eor #$b4				; XOR with feedback value that produces a good sequence
+no_eor
+	sta rand				; Store the random number
+	eor rand16
+	rts
+	.endp
+
+; place_monsters: place X monsters on the map and record their instance data
+; x = monster_count, a = window_size (number of monster types available)
+;
+; mon_ptr base address per floor (monsters_per_floor=32, MON_SIZE=4 = 128 bytes per floor):
+;
+;   floor | floor_index | LSR: A  carry | lo byte      | hi byte
+;   ------+-------------+---------------+--------------+---------
+;     0   |  %00000000  |   0      0    | 0->bit7=$00  | $6C+0=$6C
+;     1   |  %00000001  |   0      1    | 1->bit7=$80  | $6C+0=$6C
+;     2   |  %00000010  |   1      0    | 0->bit7=$00  | $6C+1=$6D
+;     3   |  %00000011  |   1      1    | 1->bit7=$80  | $6C+1=$6D
+;     4   |  %00000100  |   2      0    | 0->bit7=$00  | $6C+2=$6E
+;
+; LSR shifts floor_index right: bit 0 -> carry, rest -> A (= floor_index/2)
+; carry bit -> bit 7 of lo byte via: lda #0, ror  (gives $00 or $80)
+; hi byte = >monster_instances + A
+.proc place_monsters (.byte x,a) .reg
+	sta tmp2
+
+	; Set mon_ptr to the base address for this floor's monster instances
+	lda floor_index
+	lsr                     ; A = floor_index/2, carry = bit 0 (odd/even)
+	pha                     ; save floor_index/2
+	lda #0
+	ror                     ; carry -> bit 7: A = $00 (even floor) or $80 (odd floor)
+	sta mon_ptr             ; lo byte
+	pla                     ; restore floor_index/2
+	adc #>monster_instances ; carry is always 0 after ror of $00, so safe to add
+	sta mon_ptr+1           ; hi byte
+
+pick
+	random16
+	cmp tmp2
+	bcs pick
+
+	add #(MONSTER_START/2)
+	sta tmp
+
+place
+	random16
+	cmp #map_width
+	bcs place
+	sta tmp_x
+
+	random16
+	cmp #map_height
+	bcs place
+	sta tmp_y
+
+	advance_ptr #map map_ptr #map_width tmp_y tmp_x
+	ldy #0
+	lda (map_ptr),y
+	cmp #MAP_FLOOR
+	bne place
+	lda tmp
+	sta (map_ptr),y         ; place monster tile on map
+
+	; record instance data at (mon_ptr)
+	lda tmp                 ; MON_TYPE: monster tile index
+	sta (mon_ptr),y         ; y is still 0
+	iny
+	lda tmp_x               ; MON_X
+	sta (mon_ptr),y
+	iny
+	lda tmp_y               ; MON_Y
+	sta (mon_ptr),y
+	iny
+	lda #1                  ; MON_HP: 1 for now, real values come when combat is added
+	sta (mon_ptr),y
+	ldy #0                  ; restore y
+
+	adbw mon_ptr #MON_SIZE  ; advance mon_ptr to next instance slot
+
+	dex
+	bne pick
+
+	rts
+	.endp
+
+
+; Load floor params and generate the map for the current dungeon_index/floor_index
+.proc load_floor
+	; compute floor_params index = (dungeon_index * 5 + floor_index) * 3
+	lda dungeon_index
+	sta tmp
+	asl             ; x2
+	asl             ; x4
+	add tmp         ; x5
+	add floor_index
+	sta tmp
+	asl             ; x2
+	add tmp         ; x3
+	tay
+	lda floor_params,y
+	sta starting_monster
+	iny
+	lda floor_params,y
+	sta window_size
+	iny
+	lda floor_params,y
+	sta monster_count
+
+	copy_monsters monsters_a cur_charset_a starting_monster
+	copy_monsters monsters_b cur_charset_b starting_monster
+	copy_monster_colors monsters_a_colors cur_char_colors_a starting_monster
+	copy_monster_colors monsters_b_colors cur_char_colors_b starting_monster
+
+	; Restore this floor's seed so map generation is always deterministic
+	ldy floor_index
+	lda floor_seeds,y
+	sta rand
+
+	new_map()
+	place_monsters monster_count window_size
+	init_player_ptr()
+	mva RTCLK2 clock    ; refresh clock after generation delay
+	lda clock
+	sta input_timer     ; reset so get_input fires immediately
+	sta anim_timer      ; reset so animate fires immediately
+	rts
+	.endp
+
+.proc descend_floor
+	inc floor_index
+	inc stick_action
+	mwa #str_descending status_str_ptr
+	print_status
+	lda #16
+	sta player_x
+	sta player_y
+	load_floor()
+	rts
+	.endp
+
+.proc ascend_floor
+	lda floor_index
+	beq done            ; floor 0 = dungeon exit, stub for now
+	dec floor_index
+	inc stick_action
+	mwa #str_ascending status_str_ptr
+	print_status
+	lda #16
+	sta player_x
+	sta player_y
+	load_floor()
+	; reposition player at the down stairs (arrived from below)
+	mva stairs_down_x player_x
+	mva stairs_down_y player_y
+	init_player_ptr()
+done
+	rts
+	.endp
+
+	icl 'macros.asm'
+	icl 'hardware.asm'
+	icl 'labels.asm'
+	icl 'status.asm'
+	icl 'monster_data.asm'
+	icl 'dungeon_data.asm'
+	icl 'dlist.asm'
+	icl 'pmgdata.asm'
+	icl 'map_gen.asm'
+	icl 'input.asm'
+	icl 'strings.asm'
+
+	icl 'charset_dungeon_a.asm'
+	icl 'charset_dungeon_b.asm'
+	icl 'charset_outdoor_a.asm'
+	icl 'charset_outdoor_b.asm'
+	icl 'monsters_a.asm'
+	icl 'monsters_b.asm'
+	icl 'room_types.asm'
+	icl 'room_positions.asm'
+	icl 'room_pos_doors'
+	icl 'room_type_doors'
+	;icl 'test_map.asm'
+	icl 'charset_dungeon_a_colors.asm'
+	icl 'charset_dungeon_b_colors.asm'
+	icl 'charset_outdoor_a_colors.asm'
+	icl 'charset_outdoor_b_colors.asm'
+	icl 'monsters_a_colors.asm'
+	icl 'monsters_b_colors.asm'
+powers_of_two
+	.byte 1,2,4,8,16,32,64,128
+	
